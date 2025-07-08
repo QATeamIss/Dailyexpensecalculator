@@ -3,471 +3,691 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monthly & Daily Expense Tracker</title>
+    <title>Advanced Finance Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary-color: #007bff;
-            --primary-dark: #0056b3;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --light-gray: #f8f9fa;
-            --medium-gray: #e9ecef;
-            --dark-gray: #343a40;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --primary-color: #007bff; --success-color: #28a745; --danger-color: #dc3545;
+            --warning-color: #ffc107; --light-gray: #f8f9fa; --dark-gray: #343a40;
+            --border-radius: 8px; --box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0;
-            background-color: var(--light-gray);
-            color: var(--dark-gray);
-            display: flex;
-            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; background-color: var(--light-gray); color: var(--dark-gray);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
+        .app-container { width: 100%; max-width: 1200px; margin: 20px; }
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .container {
-            width: 100%;
-            max-width: 700px;
-            background-color: #ffffff;
-            box-shadow: var(--box-shadow);
-            margin: 20px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        header h1 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 20px;
-        }
-
-        /* --- View Toggler --- */
-        .view-toggle {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-            border: 1px solid var(--primary-color);
-            border-radius: var(--border-radius);
-            overflow: hidden;
-        }
-        .toggle-btn {
-            flex: 1;
-            padding: 12px;
-            font-size: 1em;
-            font-weight: bold;
-            text-align: center;
-            background-color: #fff;
-            color: var(--primary-color);
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .toggle-btn.active {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-
-        /* --- Sections --- */
-        .income-section, .expense-form, .tracker-view {
-            margin-bottom: 25px;
-            padding: 15px;
-            border: 1px solid var(--medium-gray);
-            border-radius: var(--border-radius);
-        }
+        /* --- Auth View --- */
+        .auth-container { max-width: 400px; margin: 40px auto; padding: 30px; background: #fff; border-radius: var(--border-radius); box-shadow: var(--box-shadow); }
+        .auth-container h1 { text-align: center; color: var(--primary-color); }
+        .auth-form .input-group { margin-bottom: 20px; }
+        .auth-form label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .auth-form input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .auth-form button { width: 100%; padding: 12px; background: var(--primary-color); color: #fff; border: none; border-radius: 5px; font-size: 1.1em; cursor: pointer; }
+        .auth-toggle { text-align: center; margin-top: 15px; cursor: pointer; color: var(--primary-color); }
         
-        .tracker-view { display: none; }
-        .tracker-view.active { display: block; }
+        /* --- Main App Layout --- */
+        .main-layout { display: flex; }
+        nav { width: 220px; background: #fff; padding: 20px; border-right: 1px solid #eee; box-shadow: var(--box-shadow); border-radius: var(--border-radius); }
+        nav h2 { margin-top: 0; color: var(--primary-color); }
+        nav ul { list-style: none; padding: 0; margin: 20px 0; }
+        nav ul li { padding: 15px; margin-bottom: 10px; border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.3s; }
+        nav ul li.active, nav ul li:hover { background-color: #e7f3ff; color: var(--primary-color); font-weight: bold; }
+        main { flex: 1; padding: 20px; }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
-        /* Make form responsive on larger screens */
-        @media (min-width: 600px) {
-            .form-grid { grid-template-columns: 1fr 1fr; }
-            .form-grid .full-width { grid-column: 1 / -1; }
-        }
+        /* --- Reusable Components --- */
+        .card { background: #fff; padding: 20px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .card-header h3 { margin: 0; }
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; }
+        .btn-primary { background: var(--primary-color); color: #fff; }
+        .btn-danger { background: var(--danger-color); color: #fff; }
+        .btn-sm { padding: 6px 10px; font-size: 0.9em; } /* Added for smaller buttons */
 
-        label { margin-bottom: 5px; font-weight: bold; display: block; }
-        input[type="text"], input[type="number"], input[type="date"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: var(--border-radius);
-            font-size: 1em;
-            box-sizing: border-box;
-        }
-        button#add-expense-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--success-color);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button#add-expense-btn:hover { background-color: #218838; }
 
-        /* --- Summary Cards --- */
-        .summary-cards {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .card {
-            flex: 1;
-            min-width: 150px;
-            padding: 15px;
-            border-radius: var(--border-radius);
-            text-align: center;
-        }
-        .card h3 { margin: 0 0 5px 0; font-size: 1em; text-transform: uppercase; }
-        .card p { margin: 0; font-size: 1.6em; font-weight: bold; }
-        .card-income { background-color: #e9f5ea; color: var(--success-color); }
-        .card-expenses { background-color: #fceaea; color: var(--danger-color); }
-        .card-balance { background-color: #e7f3ff; color: var(--primary-color); }
+        /* --- Dashboard --- */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .summary-card { background: #fff; padding: 20px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); text-align: center; }
+        .summary-card h4 { margin: 0 0 10px 0; text-transform: uppercase; color: #6c757d; }
+        .summary-card p { margin: 0; font-size: 2em; font-weight: bold; }
+        .income { color: var(--success-color); }
+        .expense { color: var(--danger-color); }
+        .balance { color: var(--primary-color); }
+        .chart-container { height: 350px; }
 
-        /* --- Tracker Controls & History --- */
-        .tracker-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            gap: 10px;
-        }
-        .tracker-controls h2 { margin: 0; font-size: 1.2em; color: var(--primary-dark); }
-        .nav-btn {
-            background: none;
-            border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #daily-date-picker { max-width: 180px; padding: 8px; }
+        /* --- Transactions Page --- */
+        .filter-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-bar select, .filter-bar input { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+        .transaction-table { width: 100%; border-collapse: collapse; }
+        .transaction-table th, .transaction-table td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        .transaction-table th { background: var(--light-gray); }
+        .transaction-table .action-btns button { margin-right: 5px; }
 
-        .expense-history ul {
-            list-style: none;
-            padding: 0;
-            max-height: 250px;
-            overflow-y: auto;
+        /* --- Modal --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #fff; padding: 30px; border-radius: var(--border-radius); width: 90%; max-width: 500px; }
+        .modal-content h2 { margin-top: 0; }
+        .modal-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .modal-full-width { grid-column: 1 / -1; }
+        .modal-actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+
+        /* --- MEDIA QUERIES FOR RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            body {
+                min-height: auto;
+            }
+            .app-container {
+                margin: 10px;
+            }
+            .main-layout {
+                flex-direction: column; /* Stack nav and main vertically */
+            }
+            nav {
+                width: 100%; /* Full width nav */
+                padding: 15px;
+                border-right: none; /* Remove right border */
+                border-bottom: 1px solid #eee; /* Add bottom border */
+                box-shadow: none; /* Reduce visual weight */
+                border-radius: var(--border-radius) var(--border-radius) 0 0; /* Adjust radius for top */
+            }
+            nav ul {
+                display: flex; /* Make nav items horizontal */
+                flex-wrap: wrap; /* Allow items to wrap */
+                justify-content: space-around; /* Distribute space */
+                margin: 10px 0;
+            }
+            nav ul li {
+                padding: 10px;
+                margin-bottom: 5px;
+                flex: 1 1 auto; /* Allow items to grow/shrink */
+                text-align: center;
+            }
+            main {
+                padding: 15px; /* Reduce padding for main content */
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr; /* Stack summary cards vertically */
+            }
+
+            .filter-bar {
+                flex-direction: column; /* Stack filters vertically */
+                gap: 10px;
+            }
+            .filter-bar select, .filter-bar input {
+                width: 100%; /* Full width for filters */
+            }
+
+            /* Responsive Table Styling */
+            .transaction-table {
+                border: 1px solid #eee; /* Add a border around the table */
+                display: block; /* Make table behave like a block element */
+                width: 100%;
+                overflow-x: auto; /* Enable horizontal scrolling if content overflows */
+                white-space: nowrap; /* Prevent content from wrapping inside cells */
+            }
+            .transaction-table thead {
+                display: none; /* Hide original table header */
+            }
+            .transaction-table tbody, 
+            .transaction-table tr, 
+            .transaction-table td {
+                display: block; /* Make tbody, tr, td behave like block elements */
+                width: auto; /* Reset width */
+            }
+            .transaction-table tr {
+                margin-bottom: 15px;
+                border: 1px solid #ccc;
+                border-radius: var(--border-radius);
+                padding: 10px;
+                background-color: #fff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                display: flex; /* Use flexbox for rows */
+                flex-wrap: wrap; /* Allow content to wrap within a row */
+                justify-content: space-between; /* Space out items */
+                align-items: center;
+            }
+            .transaction-table td {
+                text-align: left; /* Align text to left */
+                padding: 8px 0; /* Adjust padding */
+                border-bottom: none; /* Remove individual cell borders */
+                position: relative;
+                padding-left: 100px; /* Space for the data-label */
+                flex-basis: 100%; /* Each cell takes full width initially */
+                display: flex; /* Flex on td for label + value */
+                align-items: baseline;
+            }
+            .transaction-table td::before {
+                content: attr(data-label); /* Use data-label for content */
+                position: absolute;
+                left: 0;
+                width: 90px; /* Fixed width for the label */
+                padding-right: 10px;
+                font-weight: bold;
+                text-align: right; /* Align label to the right */
+                color: #6c757d;
+            }
+            .transaction-table .action-btns {
+                flex-basis: 100%; /* Actions take full width */
+                text-align: left; /* Align buttons to left */
+                padding-left: 100px; /* Match padding with labels */
+                margin-top: 10px; /* Space from other details */
+            }
+
+            .modal-content {
+                padding: 20px; /* Reduce modal padding */
+                width: 95%; /* Make modal wider on small screens */
+            }
+            .modal-form-grid {
+                grid-template-columns: 1fr; /* Stack form inputs vertically */
+            }
+            .modal-actions {
+                flex-direction: column; /* Stack modal action buttons */
+                gap: 10px;
+            }
+            .modal-actions button {
+                width: 100%; /* Full width for modal buttons */
+            }
+
+            /* Adjustments for dashboard recent transactions table */
+            #recent-transactions-list tr {
+                display: grid; /* Use grid for recent transactions for simpler layout */
+                grid-template-columns: repeat(2, 1fr); /* Two columns */
+                gap: 5px;
+                align-items: center;
+                margin-bottom: 10px;
+                padding: 10px;
+                border: 1px solid #eee;
+                border-radius: var(--border-radius);
+                background-color: #fff;
+            }
+            #recent-transactions-list td {
+                padding: 5px;
+                border-bottom: none;
+                text-align: center; /* Center align items */
+            }
+            #recent-transactions-list td:first-child {
+                grid-column: 1 / 3; /* Date spans two columns */
+                font-weight: bold;
+            }
+            #recent-transactions-list td.income,
+            #recent-transactions-list td.expense {
+                font-weight: bold;
+                font-size: 1.1em;
+            }
         }
-        .expense-history li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid var(--medium-gray);
-        }
-        .expense-history li:nth-child(odd) { background-color: var(--light-gray); }
-        .item-details { display: flex; flex-direction: column; }
-        .item-desc { font-weight: 500; }
-        .item-date { font-size: 0.8em; color: #6c757d; }
-        .item-amount { font-weight: bold; font-size: 1.1em; color: var(--danger-color); }
     </style>
 </head>
 <body>
+    <div class="app-container">
 
-    <div class="container">
-        <header>
-            <h1>Abhiram's Expense Tracker</h1>
-        </header>
-
-        <section class="income-section">
-            <div class="form-grid">
-                <div>
-                    <label for="base-income">Base Monthly Income (₹)</label>
-                    <input type="number" id="base-income" value="25000">
+        <div id="auth-view" class="view">
+            <div class="auth-container">
+                <div id="login-form">
+                    <h1>Login</h1>
+                    <form class="auth-form" id="login">
+                        <div class="input-group"><label>Email</label><input type="email" id="login-email" required></div>
+                        <div class="input-group"><label>Password</label><input type="password" id="login-password" required></div>
+                        <button type="submit">Login</button>
+                    </form>
+                    <p class="auth-toggle" id="show-signup">Don't have an account? Sign Up</p>
                 </div>
-                <div>
-                    <label for="add-income">Additional Income This Period (₹)</label>
-                    <input type="number" id="add-income" placeholder="e.g., 5000">
+                <div id="signup-form" style="display: none;">
+                    <h1>Sign Up</h1>
+                    <form class="auth-form" id="signup">
+                        <div class="input-group"><label>Email</label><input type="email" id="signup-email" required></div>
+                        <div class="input-group"><label>Password</label><input type="password" id="signup-password" required></div>
+                        <button type="submit">Sign Up</button>
+                    </form>
+                    <p class="auth-toggle" id="show-login">Already have an account? Login</p>
                 </div>
-            </div>
-        </section>
-
-        <section class="expense-form">
-            <div class="form-grid">
-                <div>
-                    <label for="expense-desc">New Expense Description</label>
-                    <input type="text" id="expense-desc" placeholder="e.g., Groceries">
-                </div>
-                <div>
-                    <label for="expense-amount">Amount (₹)</label>
-                    <input type="number"id="expense-amount" placeholder="e.g., 1500">
-                </div>
-                <div>
-                    <label for="expense-date">Date of Expense</label>
-                    <input type="date" id="expense-date">
-                </div>
-                <div class="full-width">
-                     <button id="add-expense-btn">Add Expense</button>
-                </div>
-            </div>
-        </section>
-
-        <div class="view-toggle">
-            <button class="toggle-btn active" id="toggle-monthly">Monthly Overview</button>
-            <button class="toggle-btn" id="toggle-daily">Daily Tracker</button>
-        </div>
-
-        <div id="monthly-view" class="tracker-view active">
-            <div class="tracker-controls">
-                <button class="nav-btn" id="prev-month-btn">&lt; Prev</button>
-                <h2 id="monthly-period-title"></h2>
-                <button class="nav-btn" id="next-month-btn">Next &gt;</button>
-            </div>
-            <div class="summary-cards">
-                <div class="card card-income">
-                    <h3>Total Income</h3>
-                    <p id="monthly-income-val">₹0</p>
-                </div>
-                <div class="card card-expenses">
-                    <h3>Total Expenses</h3>
-                    <p id="monthly-expenses-val">₹0</p>
-                </div>
-                <div class="card card-balance">
-                    <h3>Balance</h3>
-                    <p id="monthly-balance-val">₹0</p>
-                </div>
-            </div>
-            <div class="expense-history">
-                <ul id="monthly-expense-list"></ul>
             </div>
         </div>
 
-        <div id="daily-view" class="tracker-view">
-            <div class="tracker-controls">
-                <h2>Expenses for Day</h2>
-                <input type="date" id="daily-date-picker">
+        <div id="app-view" class="view">
+            <div class="main-layout">
+                <nav>
+                    <h2>FinDash</h2>
+                    <ul id="nav-menu">
+                        <li data-view="dashboard-view" class="active">Dashboard</li>
+                        <li data-view="transactions-view">Transactions</li>
+                        <li data-view="reports-view">Reports</li>
+                    </ul>
+                    <button id="logout-btn" class="btn btn-danger" style="width: 100%;">Logout</button>
+                </nav>
+                <main>
+                    <div id="dashboard-view" class="view active">
+                        <div class="card-header"><h3>Dashboard</h3></div>
+                        <div class="summary-grid">
+                            <div class="summary-card"><h4 class="income">Total Income</h4><p id="dash-total-income" class="income">₹0</p></div>
+                            <div class="summary-card"><h4 class="expense">Total Expenses</h4><p id="dash-total-expense" class="expense">₹0</p></div>
+                            <div class="summary-card"><h4 class="balance">Balance</h4><p id="dash-balance" class="balance">₹0</p></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3>Recent Transactions</h3></div>
+                            <table class="transaction-table">
+                                <thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead>
+                                <tbody id="recent-transactions-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="transactions-view" class="view">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>All Transactions</h3>
+                                <button id="add-transaction-btn" class="btn btn-primary">Add New</button>
+                            </div>
+                            <div class="filter-bar">
+                                <input type="month" id="filter-month">
+                                <select id="filter-type"><option value="all">All Types</option><option value="income">Income</option><option value="expense">Expense</option></select>
+                                <select id="filter-category"><option value="all">All Categories</option></select>
+                            </div>
+                            <table class="transaction-table">
+                                <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr></thead>
+                                <tbody id="transactions-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="reports-view" class="view">
+                        <div class="card">
+                            <div class="card-header"><h3>Expense Breakdown</h3></div>
+                            <div class="chart-container"><canvas id="expense-chart"></canvas></div>
+                        </div>
+                    </div>
+                </main>
             </div>
-             <div class="summary-cards">
-                 <div class="card card-expenses" style="width: 100%;">
-                    <h3>Daily Total</h3>
-                    <p id="daily-total-val">₹0</p>
+        </div>
+    </div>
+
+    <div id="transaction-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">Add Transaction</h2>
+            <form id="modal-form">
+                <input type="hidden" id="transaction-id">
+                <div class="modal-form-grid">
+                    <div><label>Type</label><select id="transaction-type"><option value="expense">Expense</option><option value="income">Income</option></select></div>
+                    <div><label>Amount</label><input type="number" id="transaction-amount" required></div>
+                    <div class="modal-full-width"><label>Description</label><input type="text" id="transaction-description" required></div>
+                    <div><label>Category</label><select id="transaction-category"></select></div>
+                    <div><label>Date</label><input type="date" id="transaction-date" required></div>
                 </div>
-             </div>
-            <div class="expense-history">
-                <ul id="daily-expense-list"></ul>
-            </div>
+                <div class="modal-actions">
+                    <button type="button" id="modal-close-btn" class="btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
         </div>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- DOM ELEMENTS (No changes here) ---
-    const baseIncomeInput = document.getElementById('base-income');
-    const addIncomeInput = document.getElementById('add-income');
-    const expenseDescInput = document.getElementById('expense-desc');
-    const expenseAmountInput = document.getElementById('expense-amount');
-    const expenseDateInput = document.getElementById('expense-date');
-    const addExpenseBtn = document.getElementById('add-expense-btn');
-    const toggleMonthlyBtn = document.getElementById('toggle-monthly');
-    const toggleDailyBtn = document.getElementById('toggle-daily');
-    const monthlyView = document.getElementById('monthly-view');
-    const dailyView = document.getElementById('daily-view');
-    const monthlyPeriodTitle = document.getElementById('monthly-period-title');
-    const prevMonthBtn = document.getElementById('prev-month-btn');
-    const nextMonthBtn = document.getElementById('next-month-btn');
-    const monthlyIncomeVal = document.getElementById('monthly-income-val');
-    const monthlyExpensesVal = document.getElementById('monthly-expenses-val');
-    const monthlyBalanceVal = document.getElementById('monthly-balance-val');
-    const monthlyExpenseList = document.getElementById('monthly-expense-list');
-    const dailyDatePicker = document.getElementById('daily-date-picker');
-    const dailyTotalVal = document.getElementById('daily-total-val');
-    const dailyExpenseList = document.getElementById('daily-expense-list');
-
-    // --- SUPABASE SETUP ---
+    // --- SUPABASE CLIENT SETUP ---
     const SUPABASE_URL = 'https://vgyzivuydkxswwbodcrj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZneXppdnV5ZGt4c3d3Ym9kY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NjgzODYsImV4cCI6MjA2NzU0NDM4Nn0.RplgPHxDjDHthfoLysIs731mxZKSxicpNWgCgYQu7NU';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const { createClient } = supabase;
-    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-
-    // --- STATE MANAGEMENT ---
+    // --- GLOBAL STATE ---
     let state = {
-        baseIncome: 25000,
-        additionalIncome: 0,
-        expenses: [], // This will be loaded from Supabase
-        currentView: 'monthly',
-        displayMonthDate: new Date()
+        user: null,
+        transactions: [],
+        categories: { income: ['Salary', 'Gifts', 'Freelance', 'Refund'], expense: ['Food', 'Transport', 'Utilities', 'Entertainment', 'Rent', 'Shopping', 'Health', 'Education', 'Other'] }, // Added more categories
+        expenseChart: null,
+        filters: {
+            month: '',
+            type: 'all',
+            category: 'all'
+        }
     };
 
-    // --- UTILITY FUNCTIONS (No changes here) ---
+    // --- DOM ELEMENTS ---
+    const views = {
+        auth: document.getElementById('auth-view'),
+        app: document.getElementById('app-view'),
+        dashboard: document.getElementById('dashboard-view'),
+        transactions: document.getElementById('transactions-view'),
+        reports: document.getElementById('reports-view')
+    };
+    const navMenu = document.getElementById('nav-menu');
+    const logoutBtn = document.getElementById('logout-btn');
+    const modal = document.getElementById('transaction-modal');
+    const modalForm = document.getElementById('modal-form');
+    const addTransactionBtn = document.getElementById('add-transaction-btn');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
+    // Filter elements
+    const filterMonth = document.getElementById('filter-month');
+    const filterType = document.getElementById('filter-type');
+    const filterCategory = document.getElementById('filter-category');
+
+
+    // --- UTILITY FUNCTIONS ---
     const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-    const formatDate = (dateObj) => {
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
+    const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB'); // DD/MM/YYYY
+    const formatDateForInput = (dateStr) => {
+        const d = new Date(dateStr);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
-    const formatDateForDisplay = (dateObj) => dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const getTrackingPeriod = (date) => {
-        let d = new Date(date);
-        let year = d.getFullYear();
-        let month = d.getMonth();
-        let start, end;
-        if (d.getDate() >= 10) {
-            start = new Date(year, month, 10);
-            end = new Date(year, month + 1, 9, 23, 59, 59, 999);
+
+    // --- VIEW NAVIGATION ---
+    const navigateTo = (viewId) => {
+        Object.values(views).forEach(v => v.classList.remove('active'));
+        if (viewId === 'login') {
+            views.auth.classList.add('active');
         } else {
-            start = new Date(year, month - 1, 10);
-            end = new Date(year, month, 9, 23, 59, 59, 999);
+            views.app.classList.add('active');
+            document.querySelectorAll('#app-view .view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
         }
-        return { start, end };
+        document.querySelectorAll('#nav-menu li').forEach(li => {
+            li.classList.toggle('active', li.dataset.view === viewId);
+        });
     };
 
-
-    // --- NEW: DATA FETCHING FROM SUPABASE ---
-    async function fetchData() {
-        const { data, error } = await db
-            .from('expenses')
-            .select('id, description, amount, expense_date');
-
-        if (error) {
-            console.error('Error fetching data:', error);
-            alert('Could not fetch expense data. Check console (F12) and ensure you have enabled RLS policies on your Supabase table.');
-            return;
+    navMenu.addEventListener('click', (e) => {
+        if (e.target.tagName === 'LI') {
+            const viewId = e.target.dataset.view;
+            navigateTo(viewId);
+            // Re-render the specific view to ensure fresh data/charts
+            if (viewId === 'dashboard-view') renderDashboard();
+            if (viewId === 'transactions-view') renderTransactionsPage();
+            if (viewId === 'reports-view') renderReportsPage();
         }
+    });
 
-        // Convert date strings from DB into Date objects
-        state.expenses = data.map(e => ({
-            id: e.id,
-            desc: e.description,
-            amount: e.amount,
-            date: new Date(e.expense_date + 'T00:00:00') // Avoid timezone issues
-        }));
+    // --- AUTHENTICATION ---
+    const auth = {
+        showLogin: document.getElementById('show-login'),
+        showSignup: document.getElementById('show-signup'),
+        loginForm: document.getElementById('login-form'),
+        signupForm: document.getElementById('signup-form'),
+
+        init() {
+            this.showLogin.addEventListener('click', () => this.toggleForms(true));
+            this.showSignup.addEventListener('click', () => this.toggleForms(false));
+            document.getElementById('login').addEventListener('submit', this.handleLogin.bind(this));
+            document.getElementById('signup').addEventListener('submit', this.handleSignup.bind(this));
+            logoutBtn.addEventListener('click', this.handleLogout.bind(this));
+            this.checkSession();
+        },
+        toggleForms(showLogin) {
+            this.loginForm.style.display = showLogin ? 'block' : 'none';
+            this.signupForm.style.display = showLogin ? 'none' : 'block';
+        },
+        async handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const { error } = await db.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message);
+            else this.checkSession();
+        },
+        async handleSignup(e) {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const { error } = await db.auth.signUp({ email, password });
+            if (error) alert(error.message);
+            else alert('Check your email for a confirmation link!');
+        },
+        async handleLogout() {
+            await db.auth.signOut();
+            state.user = null;
+            navigateTo('login');
+        },
+        async checkSession() {
+            const { data: { session } } = await db.auth.getSession();
+            state.user = session ? session.user : null;
+            if (state.user) {
+                navigateTo('dashboard-view');
+                initializeApp();
+            } else {
+                navigateTo('login');
+            }
+        }
+    };
+
+    // --- DATA FETCHING & RENDERING ---
+    async function initializeApp() {
+        if (!state.user) return; // Ensure user is logged in before fetching data
+
+        const [incomes, expenses] = await Promise.all([
+            db.from('incomes').select('*').eq('user_id', state.user.id).order('income_date', { ascending: false }),
+            db.from('expenses').select('*').eq('user_id', state.user.id).order('expense_date', { ascending: false })
+        ]);
         
-        // Restore income from localStorage (can also be moved to Supabase)
-        state.baseIncome = parseFloat(localStorage.getItem('baseIncome')) || 25000;
-        state.additionalIncome = parseFloat(localStorage.getItem('additionalIncome')) || 0;
+        state.transactions = [
+            ...(incomes.data || []).map(i => ({...i, type: 'income', date: i.income_date, description: i.description, category: i.category || 'Uncategorized'})),
+            ...(expenses.data || []).map(e => ({...e, type: 'expense', date: e.expense_date, description: e.description, category: e.category || 'Uncategorized'}))
+        ].sort((a,b) => new Date(b.date) - new Date(a.date));
 
-        renderUI();
+        populateFilterCategories(); // Populate categories based on fetched data
+        renderAll();
+    }
+
+    function renderAll() {
+        renderDashboard();
+        renderTransactionsPage();
+        renderReportsPage();
+    }
+
+    function renderDashboard() {
+        const totalIncome = state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpense = state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        document.getElementById('dash-total-income').textContent = formatCurrency(totalIncome);
+        document.getElementById('dash-total-expense').textContent = formatCurrency(totalExpense);
+        document.getElementById('dash-balance').textContent = formatCurrency(totalIncome - totalExpense);
+
+        const recentList = document.getElementById('recent-transactions-list');
+        recentList.innerHTML = '';
+        state.transactions.slice(0, 5).forEach(t => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td data-label="Date">${formatDate(t.date)}</td>
+                <td data-label="Description">${t.description}</td>
+                <td data-label="Amount" class="${t.type}">${formatCurrency(t.amount)}</td>
+            `;
+            recentList.appendChild(row);
+        });
+    }
+
+    function renderTransactionsPage() {
+        const list = document.getElementById('transactions-list');
+        list.innerHTML = '';
+
+        const filteredTransactions = state.transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            const filterMonthValue = filterMonth.value;
+            const filterTypeValue = filterType.value;
+            const filterCategoryValue = filterCategory.value;
+
+            // Month filter
+            if (filterMonthValue && `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}` !== filterMonthValue) {
+                return false;
+            }
+
+            // Type filter
+            if (filterTypeValue !== 'all' && t.type !== filterTypeValue) {
+                return false;
+            }
+
+            // Category filter
+            if (filterCategoryValue !== 'all' && t.category !== filterCategoryValue) {
+                return false;
+            }
+            return true;
+        });
+
+        filteredTransactions.forEach(t => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td data-label="Date">${formatDate(t.date)}</td>
+                <td data-label="Description">${t.description}</td>
+                <td data-label="Category">${t.category}</td>
+                <td data-label="Amount" class="${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</td>
+                <td class="action-btns" data-label="Actions">
+                    <button class="btn btn-primary btn-sm" onclick="window.openModal(true, '${t.id}', '${t.type}')">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="window.deleteTransaction('${t.id}', '${t.type}')">Del</button>
+                </td>
+            `;
+            list.appendChild(row);
+        });
     }
     
-    // RENDER FUNCTIONS (Slight modification to renderUI)
-    const renderUI = () => {
-        // No longer need saveData() here, DB calls handle saving
-        baseIncomeInput.value = state.baseIncome;
-        addIncomeInput.value = state.additionalIncome || '';
-        monthlyView.classList.toggle('active', state.currentView === 'monthly');
-        dailyView.classList.toggle('active', state.currentView === 'daily');
-        toggleMonthlyBtn.classList.toggle('active', state.currentView === 'monthly');
-        toggleDailyBtn.classList.toggle('active', state.currentView === 'daily');
-        if (state.currentView === 'monthly') renderMonthlyView();
-        else renderDailyView();
-    };
-
-    const renderMonthlyView = () => {
-        const period = getTrackingPeriod(state.displayMonthDate);
-        monthlyPeriodTitle.textContent = `${formatDateForDisplay(period.start)} - ${formatDateForDisplay(period.end)}`;
-        const expensesInPeriod = state.expenses.filter(e => e.date >= period.start && e.date <= period.end);
-        const totalExpenses = expensesInPeriod.reduce((sum, e) => sum + e.amount, 0);
-        const totalIncome = state.baseIncome + state.additionalIncome;
-        const balance = totalIncome - totalExpenses;
-        monthlyIncomeVal.textContent = formatCurrency(totalIncome);
-        monthlyExpensesVal.textContent = formatCurrency(totalExpenses);
-        monthlyBalanceVal.textContent = formatCurrency(balance);
-        monthlyBalanceVal.style.color = balance < 0 ? 'var(--danger-color)' : 'var(--primary-color)';
-        monthlyExpenseList.innerHTML = '';
-        if (expensesInPeriod.length === 0) {
-            monthlyExpenseList.innerHTML = '<li>No expenses in this period.</li>';
-            return;
-        }
-        expensesInPeriod.sort((a,b) => b.date - a.date).forEach(e => {
-            const li = document.createElement('li');
-            li.innerHTML = `<div class="item-details"><span class="item-desc">${e.desc}</span><span class="item-date">${formatDateForDisplay(e.date)}</span></div><span class="item-amount">-${formatCurrency(e.amount)}</span>`;
-            monthlyExpenseList.appendChild(li);
-        });
-    };
-
-    const renderDailyView = () => {
-        const selectedDateStr = dailyDatePicker.value;
-        const dailyExpenses = state.expenses.filter(e => formatDate(e.date) === selectedDateStr);
-        const dailyTotal = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
-        dailyTotalVal.textContent = formatCurrency(dailyTotal);
-        dailyExpenseList.innerHTML = '';
-        if (dailyExpenses.length === 0) {
-            dailyExpenseList.innerHTML = '<li>No expenses for this day.</li>';
-            return;
-        }
-        dailyExpenses.forEach(e => {
-            const li = document.createElement('li');
-            li.innerHTML = `<span class="item-desc">${e.desc}</span><span class="item-amount">-${formatCurrency(e.amount)}</span>`;
-            dailyExpenseList.appendChild(li);
-        });
-    };
-
-    // --- EVENT HANDLERS (Updated for Supabase) ---
-    baseIncomeInput.addEventListener('change', (e) => {
-        state.baseIncome = parseFloat(e.target.value) || 0;
-        localStorage.setItem('baseIncome', state.baseIncome); // Simple save for income
-        renderUI();
-    });
-
-    addIncomeInput.addEventListener('change', (e) => {
-        state.additionalIncome = parseFloat(e.target.value) || 0;
-        localStorage.setItem('additionalIncome', state.additionalIncome); // Simple save
-        renderUI();
-    });
-
-    // Main update: adding an expense
-    addExpenseBtn.addEventListener('click', async () => {
-        const description = expenseDescInput.value.trim();
-        const amount = parseFloat(expenseAmountInput.value);
-        const expense_date = expenseDateInput.value;
-
-        if (!description || !amount || !expense_date || amount <= 0) {
-            alert('Please fill all fields with valid data.');
-            return;
-        }
-
-        // Add to Supabase DB
-        const { data, error } = await db
-            .from('expenses')
-            .insert([{ description, amount, expense_date }])
-            .select();
-
-        if (error) {
-            console.error('Error inserting data:', error);
-            alert('Could not add expense.');
-            return;
-        }
-
-        // Add to local state to instantly update UI
-        const newExpense = data[0];
-        state.expenses.push({
-            id: newExpense.id,
-            desc: newExpense.description,
-            amount: newExpense.amount,
-            date: new Date(newExpense.expense_date + 'T00:00:00')
-        });
+    function renderReportsPage() {
+        if(state.expenseChart) state.expenseChart.destroy();
         
-        expenseDescInput.value = '';
-        expenseAmountInput.value = '';
-        renderUI(); // Re-render the display
-    });
+        const expenseData = state.transactions.filter(t => t.type === 'expense')
+            .reduce((acc, t) => {
+                acc[t.category] = (acc[t.category] || 0) + t.amount;
+                return acc;
+            }, {});
 
-    // Other event listeners (no changes)
-    toggleMonthlyBtn.addEventListener('click', () => { state.currentView = 'monthly'; renderUI(); });
-    toggleDailyBtn.addEventListener('click', () => { state.currentView = 'daily'; renderUI(); });
-    prevMonthBtn.addEventListener('click', () => { state.displayMonthDate.setMonth(state.displayMonthDate.getMonth() - 1); renderUI(); });
-    nextMonthBtn.addEventListener('click', () => { state.displayMonthDate.setMonth(state.displayMonthDate.getMonth() + 1); renderUI(); });
-    dailyDatePicker.addEventListener('change', renderDailyView);
+        const ctx = document.getElementById('expense-chart').getContext('2d');
+        state.expenseChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(expenseData),
+                datasets: [{
+                    data: Object.values(expenseData),
+                    backgroundColor: ['#dc3545', '#ffc107', '#007bff', '#17a2b8', '#6f42c1', '#28a745', '#fd7e14', '#20c997', '#6610f2'] // More colors for more categories
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 20, // Make color boxes smaller for mobile
+                            padding: 10 // Reduce padding between legend items
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Expense Breakdown by Category',
+                        font: {
+                            size: 16 // Adjust title font size for mobile
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- MODAL & FORM HANDLING ---
+    window.openModal = (isEdit = false, id = null, type = 'expense') => {
+        modalForm.reset();
+        document.getElementById('transaction-id').value = id;
+        document.getElementById('modal-title').textContent = isEdit ? 'Edit Transaction' : 'Add Transaction';
+        
+        // Set default date for new transaction to today
+        if (!isEdit) {
+            document.getElementById('transaction-date').value = formatDateForInput(new Date());
+        }
+
+        if(isEdit) {
+            const transaction = state.transactions.find(t => t.id == id && t.type === type);
+            if(transaction) {
+                document.getElementById('transaction-type').value = transaction.type;
+                document.getElementById('transaction-amount').value = transaction.amount;
+                document.getElementById('transaction-description').value = transaction.description;
+                document.getElementById('transaction-category').value = transaction.category;
+                document.getElementById('transaction-date').value = formatDateForInput(transaction.date); // Use new format for input
+            }
+        }
+        
+        updateCategoryOptions(document.getElementById('transaction-type').value);
+        modal.style.display = 'flex';
+    };
+
+    addTransactionBtn.addEventListener('click', () => openModal());
+    modalCloseBtn.addEventListener('click', () => modal.style.display = 'none');
+    document.getElementById('transaction-type').addEventListener('change', (e) => updateCategoryOptions(e.target.value));
+
+    function updateCategoryOptions(type) {
+        const categorySelect = document.getElementById('transaction-category');
+        categorySelect.innerHTML = '';
+        state.categories[type].forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            categorySelect.appendChild(option);
+        });
+    }
+
+    function populateFilterCategories() {
+        const allCategories = new Set();
+        state.transactions.forEach(t => allCategories.add(t.category));
+
+        filterCategory.innerHTML = '<option value="all">All Categories</option>';
+        Array.from(allCategories).sort().forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            filterCategory.appendChild(option);
+        });
+    }
+
+    modalForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('transaction-id').value;
+        const type = document.getElementById('transaction-type').value;
+
+        const transactionData = {
+            user_id: state.user.id,
+            description: document.getElementById('transaction-description').value,
+            amount: parseFloat(document.getElementById('transaction-amount').value),
+            category: document.getElementById('transaction-category').value,
+        };
+        
+        const dateKey = type === 'income' ? 'income_date' : 'expense_date';
+        transactionData[dateKey] = document.getElementById('transaction-date').value;
+
+        const tableName = type === 'income' ? 'incomes' : 'expenses';
+
+        if(id) { // Update
+            const { error } = await db.from(tableName).update(transactionData).match({ id });
+            if(error) alert('Error updating: ' + error.message);
+        } else { // Create
+            const { error } = await db.from(tableName).insert([transactionData]);
+            if(error) alert('Error adding: ' + error.message);
+        }
+        
+        modal.style.display = 'none';
+        initializeApp(); // Re-fetch all data and re-render
+    });
     
-    // --- INITIALIZATION ---
-    expenseDateInput.value = formatDate(new Date());
-    dailyDatePicker.value = formatDate(new Date());
-    fetchData(); // Fetch initial data from Supabase instead of localStorage
+    window.deleteTransaction = async (id, type) => {
+        if(!confirm('Are you sure you want to delete this transaction?')) return;
+        const tableName = type === 'income' ? 'incomes' : 'expenses';
+        const { error } = await db.from(tableName).delete().match({ id });
+        if(error) alert('Error deleting: ' + error.message);
+        else initializeApp(); // Re-fetch all data and re-render
+    }
+
+    // --- Filter Event Listeners ---
+    filterMonth.addEventListener('change', renderTransactionsPage);
+    filterType.addEventListener('change', () => {
+        // Update category filter options when type changes
+        populateFilterCategories(); 
+        renderTransactionsPage();
+    });
+    filterCategory.addEventListener('change', renderTransactionsPage);
+
+
+    // --- INITIALIZE APP ---
+    auth.init();
 });
 </script>
+
 </body>
 </html>
