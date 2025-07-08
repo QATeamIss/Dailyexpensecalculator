@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monthly & Daily Expense Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary-color: #007bff;
@@ -261,20 +262,17 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- DOM ELEMENTS ---
+    // --- DOM ELEMENTS (No changes here) ---
     const baseIncomeInput = document.getElementById('base-income');
     const addIncomeInput = document.getElementById('add-income');
     const expenseDescInput = document.getElementById('expense-desc');
     const expenseAmountInput = document.getElementById('expense-amount');
     const expenseDateInput = document.getElementById('expense-date');
     const addExpenseBtn = document.getElementById('add-expense-btn');
-
     const toggleMonthlyBtn = document.getElementById('toggle-monthly');
     const toggleDailyBtn = document.getElementById('toggle-daily');
     const monthlyView = document.getElementById('monthly-view');
     const dailyView = document.getElementById('daily-view');
-
-    // Monthly View Elements
     const monthlyPeriodTitle = document.getElementById('monthly-period-title');
     const prevMonthBtn = document.getElementById('prev-month-btn');
     const nextMonthBtn = document.getElementById('next-month-btn');
@@ -282,23 +280,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const monthlyExpensesVal = document.getElementById('monthly-expenses-val');
     const monthlyBalanceVal = document.getElementById('monthly-balance-val');
     const monthlyExpenseList = document.getElementById('monthly-expense-list');
-
-    // Daily View Elements
     const dailyDatePicker = document.getElementById('daily-date-picker');
     const dailyTotalVal = document.getElementById('daily-total-val');
     const dailyExpenseList = document.getElementById('daily-expense-list');
+
+    // --- SUPABASE SETUP ---
+    const SUPABASE_URL = 'https://vgyzivuydkxswwbodcrj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZneXppdnV5ZGt4c3d3Ym9kY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NjgzODYsImV4cCI6MjA2NzU0NDM4Nn0.RplgPHxDjDHthfoLysIs731mxZKSxicpNWgCgYQu7NU';
+
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 
     // --- STATE MANAGEMENT ---
     let state = {
         baseIncome: 25000,
         additionalIncome: 0,
-        expenses: [], // { id, desc, amount, date }
+        expenses: [], // This will be loaded from Supabase
         currentView: 'monthly',
-        // A date object that determines which tracking month we are viewing
-        displayMonthDate: new Date() 
+        displayMonthDate: new Date()
     };
-    
-    // --- UTILITY FUNCTIONS ---
+
+    // --- UTILITY FUNCTIONS (No changes here) ---
     const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
     const formatDate = (dateObj) => {
         const year = dateObj.getFullYear();
@@ -307,13 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${year}-${month}-${day}`;
     };
     const formatDateForDisplay = (dateObj) => dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-    // The core logic for the custom month
     const getTrackingPeriod = (date) => {
         let d = new Date(date);
         let year = d.getFullYear();
-        let month = d.getMonth(); // 0-11
-
+        let month = d.getMonth();
         let start, end;
         if (d.getDate() >= 10) {
             start = new Date(year, month, 10);
@@ -325,57 +325,58 @@ document.addEventListener('DOMContentLoaded', () => {
         return { start, end };
     };
 
-    // --- DATA PERSISTENCE (LOCAL STORAGE) ---
-    const saveData = () => {
-        localStorage.setItem('expenseTrackerState', JSON.stringify(state));
-    };
 
-    const loadData = () => {
-        const savedState = localStorage.getItem('expenseTrackerState');
-        if (savedState) {
-            const parsedState = JSON.parse(savedState);
-            // Convert date strings back to Date objects
-            parsedState.displayMonthDate = new Date(parsedState.displayMonthDate);
-            parsedState.expenses.forEach(e => e.date = new Date(e.date));
-            state = parsedState;
+    // --- NEW: DATA FETCHING FROM SUPABASE ---
+    async function fetchData() {
+        const { data, error } = await db
+            .from('expenses')
+            .select('id, description, amount, expense_date');
+
+        if (error) {
+            console.error('Error fetching data:', error);
+            alert('Could not fetch expense data. Check console (F12) and ensure you have enabled RLS policies on your Supabase table.');
+            return;
         }
-    };
 
-    // --- RENDER FUNCTIONS ---
+        // Convert date strings from DB into Date objects
+        state.expenses = data.map(e => ({
+            id: e.id,
+            desc: e.description,
+            amount: e.amount,
+            date: new Date(e.expense_date + 'T00:00:00') // Avoid timezone issues
+        }));
+        
+        // Restore income from localStorage (can also be moved to Supabase)
+        state.baseIncome = parseFloat(localStorage.getItem('baseIncome')) || 25000;
+        state.additionalIncome = parseFloat(localStorage.getItem('additionalIncome')) || 0;
+
+        renderUI();
+    }
+    
+    // RENDER FUNCTIONS (Slight modification to renderUI)
     const renderUI = () => {
-        // Set input values from state
+        // No longer need saveData() here, DB calls handle saving
         baseIncomeInput.value = state.baseIncome;
         addIncomeInput.value = state.additionalIncome || '';
-
-        // Toggle view visibility
         monthlyView.classList.toggle('active', state.currentView === 'monthly');
         dailyView.classList.toggle('active', state.currentView === 'daily');
         toggleMonthlyBtn.classList.toggle('active', state.currentView === 'monthly');
         toggleDailyBtn.classList.toggle('active', state.currentView === 'daily');
-
-        if (state.currentView === 'monthly') {
-            renderMonthlyView();
-        } else {
-            renderDailyView();
-        }
-        saveData();
+        if (state.currentView === 'monthly') renderMonthlyView();
+        else renderDailyView();
     };
 
     const renderMonthlyView = () => {
         const period = getTrackingPeriod(state.displayMonthDate);
         monthlyPeriodTitle.textContent = `${formatDateForDisplay(period.start)} - ${formatDateForDisplay(period.end)}`;
-        
         const expensesInPeriod = state.expenses.filter(e => e.date >= period.start && e.date <= period.end);
-        
         const totalExpenses = expensesInPeriod.reduce((sum, e) => sum + e.amount, 0);
         const totalIncome = state.baseIncome + state.additionalIncome;
         const balance = totalIncome - totalExpenses;
-
         monthlyIncomeVal.textContent = formatCurrency(totalIncome);
         monthlyExpensesVal.textContent = formatCurrency(totalExpenses);
         monthlyBalanceVal.textContent = formatCurrency(balance);
         monthlyBalanceVal.style.color = balance < 0 ? 'var(--danger-color)' : 'var(--primary-color)';
-
         monthlyExpenseList.innerHTML = '';
         if (expensesInPeriod.length === 0) {
             monthlyExpenseList.innerHTML = '<li>No expenses in this period.</li>';
@@ -383,12 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         expensesInPeriod.sort((a,b) => b.date - a.date).forEach(e => {
             const li = document.createElement('li');
-            li.innerHTML = `
-                <div class="item-details">
-                    <span class="item-desc">${e.desc}</span>
-                    <span class="item-date">${formatDateForDisplay(e.date)}</span>
-                </div>
-                <span class="item-amount">-${formatCurrency(e.amount)}</span>`;
+            li.innerHTML = `<div class="item-details"><span class="item-desc">${e.desc}</span><span class="item-date">${formatDateForDisplay(e.date)}</span></div><span class="item-amount">-${formatCurrency(e.amount)}</span>`;
             monthlyExpenseList.appendChild(li);
         });
     };
@@ -396,10 +392,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderDailyView = () => {
         const selectedDateStr = dailyDatePicker.value;
         const dailyExpenses = state.expenses.filter(e => formatDate(e.date) === selectedDateStr);
-        
         const dailyTotal = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
         dailyTotalVal.textContent = formatCurrency(dailyTotal);
-
         dailyExpenseList.innerHTML = '';
         if (dailyExpenses.length === 0) {
             dailyExpenseList.innerHTML = '<li>No expenses for this day.</li>';
@@ -407,76 +401,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         dailyExpenses.forEach(e => {
             const li = document.createElement('li');
-            li.innerHTML = `
-                <span class="item-desc">${e.desc}</span>
-                <span class="item-amount">-${formatCurrency(e.amount)}</span>`;
+            li.innerHTML = `<span class="item-desc">${e.desc}</span><span class="item-amount">-${formatCurrency(e.amount)}</span>`;
             dailyExpenseList.appendChild(li);
         });
     };
-    
-    // --- EVENT HANDLERS ---
+
+    // --- EVENT HANDLERS (Updated for Supabase) ---
     baseIncomeInput.addEventListener('change', (e) => {
         state.baseIncome = parseFloat(e.target.value) || 0;
+        localStorage.setItem('baseIncome', state.baseIncome); // Simple save for income
         renderUI();
     });
 
     addIncomeInput.addEventListener('change', (e) => {
         state.additionalIncome = parseFloat(e.target.value) || 0;
+        localStorage.setItem('additionalIncome', state.additionalIncome); // Simple save
         renderUI();
     });
 
-    addExpenseBtn.addEventListener('click', () => {
-        const desc = expenseDescInput.value.trim();
+    // Main update: adding an expense
+    addExpenseBtn.addEventListener('click', async () => {
+        const description = expenseDescInput.value.trim();
         const amount = parseFloat(expenseAmountInput.value);
-        const dateStr = expenseDateInput.value;
+        const expense_date = expenseDateInput.value;
 
-        if (!desc || !amount || !dateStr || amount <= 0) {
+        if (!description || !amount || !expense_date || amount <= 0) {
             alert('Please fill all fields with valid data.');
             return;
         }
 
+        // Add to Supabase DB
+        const { data, error } = await db
+            .from('expenses')
+            .insert([{ description, amount, expense_date }])
+            .select();
+
+        if (error) {
+            console.error('Error inserting data:', error);
+            alert('Could not add expense.');
+            return;
+        }
+
+        // Add to local state to instantly update UI
+        const newExpense = data[0];
         state.expenses.push({
-            id: Date.now(),
-            desc,
-            amount,
-            date: new Date(dateStr + 'T00:00:00') // Avoid timezone issues
+            id: newExpense.id,
+            desc: newExpense.description,
+            amount: newExpense.amount,
+            date: new Date(newExpense.expense_date + 'T00:00:00')
         });
         
         expenseDescInput.value = '';
         expenseAmountInput.value = '';
-        renderUI();
+        renderUI(); // Re-render the display
     });
 
-    toggleMonthlyBtn.addEventListener('click', () => {
-        state.currentView = 'monthly';
-        renderUI();
-    });
-
-    toggleDailyBtn.addEventListener('click', () => {
-        state.currentView = 'daily';
-        renderUI();
-    });
-    
-    // Monthly navigation
-    prevMonthBtn.addEventListener('click', () => {
-        state.displayMonthDate.setMonth(state.displayMonthDate.getMonth() - 1);
-        renderUI();
-    });
-    nextMonthBtn.addEventListener('click', () => {
-        state.displayMonthDate.setMonth(state.displayMonthDate.getMonth() + 1);
-        renderUI();
-    });
-
-    // Daily date picker
+    // Other event listeners (no changes)
+    toggleMonthlyBtn.addEventListener('click', () => { state.currentView = 'monthly'; renderUI(); });
+    toggleDailyBtn.addEventListener('click', () => { state.currentView = 'daily'; renderUI(); });
+    prevMonthBtn.addEventListener('click', () => { state.displayMonthDate.setMonth(state.displayMonthDate.getMonth() - 1); renderUI(); });
+    nextMonthBtn.addEventListener('click', () => { state.displayMonthDate.setMonth(state.displayMonthDate.getMonth() + 1); renderUI(); });
     dailyDatePicker.addEventListener('change', renderDailyView);
     
     // --- INITIALIZATION ---
-    loadData();
-    // Set default dates for date inputs
     expenseDateInput.value = formatDate(new Date());
     dailyDatePicker.value = formatDate(new Date());
-    // Initial render
-    renderUI();
+    fetchData(); // Fetch initial data from Supabase instead of localStorage
 });
 </script>
 </body>
