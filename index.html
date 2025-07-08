@@ -7,180 +7,738 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* --- New Design Tokens & Base Styles --- */
         :root {
-            --primary-color: #007bff; --success-color: #28a745; --danger-color: #dc3545;
-            --warning-color: #ffc107; --light-gray: #f8f9fa; --dark-gray: #343a40;
-            --border-radius: 8px; --box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            /* Colors */
+            --primary-color: #4A90E2; /* A more vibrant blue */
+            --primary-dark: #357ABD;
+            --success-color: #50B79B; /* A pleasant green */
+            --danger-color: #E25E5E; /* A softer red */
+            --warning-color: #F8C301; /* A golden yellow */
+            --info-color: #6A8EAD; /* For secondary info */
+
+            --text-color: #333;
+            --text-light: #666;
+            --background-light: #F9FBFD; /* Light background */
+            --background-card: #FFFFFF;
+            --border-color: #E0E6ED;
+            --shadow-light: rgba(0, 0, 0, 0.08); /* Lighter, softer shadow */
+            --shadow-medium: rgba(0, 0, 0, 0.12);
+
+            /* Spacing & Sizing */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+
+            /* Typography */
+            --font-family-sans: -apple-system, BlinkMacMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            --font-size-base: 16px;
+            --font-size-sm: 0.875rem; /* 14px */
+            --font-size-lg: 1.25rem; /* 20px */
+
+            /* Borders & Shadows */
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+            --box-shadow-sm: 0 2px 4px var(--shadow-light);
+            --box-shadow-md: 0 4px 12px var(--shadow-medium);
+            --transition-speed: 0.2s ease-in-out;
         }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; background-color: var(--light-gray); color: var(--dark-gray);
-            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            font-family: var(--font-family-sans);
+            margin: 0;
+            background-color: var(--background-light);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.6;
         }
-        .app-container { width: 100%; max-width: 1200px; margin: 20px; }
-        .view { display: none; }
-        .view.active { display: block; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: var(--spacing-lg);
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         /* --- Auth View --- */
-        .auth-container { max-width: 400px; margin: 40px auto; padding: 30px; background: #fff; border-radius: var(--border-radius); box-shadow: var(--box-shadow); }
-        .auth-container h1 { text-align: center; color: var(--primary-color); }
-        .auth-form .input-group { margin-bottom: 20px; }
-        .auth-form label { display: block; margin-bottom: 5px; font-weight: 500; }
-        .auth-form input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .auth-form button { width: 100%; padding: 12px; background: var(--primary-color); color: #fff; border: none; border-radius: 5px; font-size: 1.1em; cursor: pointer; }
-        .auth-toggle { text-align: center; margin-top: 15px; cursor: pointer; color: var(--primary-color); }
-        
+        .auth-container {
+            max-width: 450px;
+            margin: var(--spacing-xl) auto;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            background: var(--background-card);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--box-shadow-md);
+            text-align: center;
+        }
+
+        .auth-container h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-xl);
+            font-size: 2.2em;
+            letter-spacing: -0.5px;
+        }
+
+        .auth-form .input-group {
+            margin-bottom: var(--spacing-md);
+            text-align: left;
+        }
+
+        .auth-form label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-weight: 600;
+            color: var(--text-light);
+            font-size: var(--font-size-sm);
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            box-sizing: border-box;
+            font-size: var(--font-size-base);
+            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+        }
+        .auth-form input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+
+        .auth-form button {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-lg);
+            cursor: pointer;
+            transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
+            margin-top: var(--spacing-md);
+        }
+        .auth-form button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow-sm);
+        }
+        .auth-form button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: var(--spacing-lg);
+            cursor: pointer;
+            color: var(--primary-color);
+            font-size: var(--font-size-sm);
+            transition: color var(--transition-speed);
+        }
+        .auth-toggle:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
         /* --- Main App Layout --- */
-        .main-layout { display: flex; }
-        nav { width: 220px; background: #fff; padding: 20px; border-right: 1px solid #eee; box-shadow: var(--box-shadow); border-radius: var(--border-radius); }
-        nav h2 { margin-top: 0; color: var(--primary-color); }
-        nav ul { list-style: none; padding: 0; margin: 20px 0; }
-        nav ul li { padding: 15px; margin-bottom: 10px; border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.3s; }
-        nav ul li.active, nav ul li:hover { background-color: #e7f3ff; color: var(--primary-color); font-weight: bold; }
-        main { flex: 1; padding: 20px; }
+        .main-layout {
+            display: flex;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--box-shadow-md);
+            overflow: hidden; /* Ensures child elements respect border-radius */
+            background-color: var(--background-card);
+        }
+
+        nav {
+            width: 280px; /* Slightly wider nav */
+            background: var(--background-card);
+            padding: var(--spacing-xl);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Push logout to bottom */
+        }
+        nav h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 1.8em;
+            margin-bottom: var(--spacing-xl);
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0; /* Reset margin */
+            flex-grow: 1; /* Allows it to take available space */
+        }
+        nav ul li {
+            padding: var(--spacing-md) var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+            font-weight: 500;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+        }
+        nav ul li:hover {
+            background-color: var(--background-light);
+            color: var(--primary-dark);
+        }
+        nav ul li.active {
+            background-color: var(--primary-color);
+            color: #fff;
+            font-weight: bold;
+            box-shadow: var(--box-shadow-sm);
+        }
+        nav ul li.active:hover {
+             background-color: var(--primary-dark); /* Darker on hover for active */
+             color: #fff;
+        }
+        
+        main {
+            flex: 1;
+            padding: var(--spacing-xl);
+            background-color: var(--background-light); /* Lighter background for main content */
+        }
 
         /* --- Reusable Components --- */
-        .card { background: #fff; padding: 20px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); margin-bottom: 20px; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .card-header h3 { margin: 0; }
-        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; }
-        .btn-primary { background: var(--primary-color); color: #fff; }
-        .btn-danger { background: var(--danger-color); color: #fff; }
-        .btn-sm { padding: 6px 10px; font-size: 0.9em; } /* Added for smaller buttons */
+        .card {
+            background: var(--background-card);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--box-shadow-sm);
+            margin-bottom: var(--spacing-lg);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px var(--shadow-medium);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap; /* Allow wrapping for filters */
+        }
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.4em;
+            color: var(--text-color);
+            flex-shrink: 0; /* Prevent h3 from shrinking too much */
+        }
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: none;
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+            transition: all var(--transition-speed);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-primary {
+            background: var(--primary-color);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--box-shadow-sm);
+        }
+        .btn-danger {
+            background: var(--danger-color);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #C44C4C; /* Darker red */
+            box-shadow: var(--box-shadow-sm);
+        }
+        .btn-success {
+            background: var(--success-color);
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #429A7F;
+            box-shadow: var(--box-shadow-sm);
+        }
+        .btn-sm {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: 0.8em;
+        }
+
+        /* --- Custom Dropdowns & Inputs --- */
+        .custom-select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%; /* Or set specific width */
+        }
+
+        .custom-select-trigger {
+            display: block;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            background-color: var(--background-card);
+            cursor: pointer;
+            font-size: var(--font-size-base);
+            color: var(--text-color);
+            position: relative;
+            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+            appearance: none; /* Remove default arrow */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        .custom-select-trigger:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+
+        .custom-select-trigger::after {
+            content: '▼'; /* Custom dropdown arrow */
+            position: absolute;
+            right: var(--spacing-md);
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8em;
+            color: var(--text-light);
+            pointer-events: none; /* Allows clicks to pass through to the trigger */
+        }
+
+        .custom-options {
+            display: none;
+            position: absolute;
+            top: 100%; /* Position below trigger */
+            left: 0;
+            right: 0;
+            background-color: var(--background-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--box-shadow-sm);
+            z-index: 10;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: var(--spacing-xs);
+        }
+
+        .custom-options.open {
+            display: block;
+        }
+
+        .custom-option {
+            padding: var(--spacing-sm) var(--spacing-md);
+            cursor: pointer;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+            font-size: var(--font-size-base);
+            color: var(--text-color);
+        }
+
+        .custom-option:hover {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .custom-option.selected {
+            background-color: var(--primary-color);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* Class to hide the original select elements */
+        .hidden-select {
+            display: none;
+        }
+
+        /* Adjustments for normal inputs */
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="month"] {
+            width: 100%; /* Ensure inputs take full width */
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-base);
+            color: var(--text-color);
+            box-sizing: border-box;
+            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        input[type="month"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
 
 
         /* --- Dashboard --- */
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .summary-card { background: #fff; padding: 20px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); text-align: center; }
-        .summary-card h4 { margin: 0 0 10px 0; text-transform: uppercase; color: #6c757d; }
-        .summary-card p { margin: 0; font-size: 2em; font-weight: bold; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Slightly wider cards */
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+        .summary-card {
+            background: var(--background-card);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--box-shadow-sm);
+            text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .summary-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px var(--shadow-medium);
+        }
+        .summary-card h4 {
+            margin: 0 0 var(--spacing-sm) 0;
+            text-transform: uppercase;
+            color: var(--text-light);
+            font-size: var(--font-size-sm);
+            letter-spacing: 0.5px;
+        }
+        .summary-card p {
+            margin: 0;
+            font-size: 2.5em; /* Larger amounts */
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
         .income { color: var(--success-color); }
         .expense { color: var(--danger-color); }
         .balance { color: var(--primary-color); }
-        .chart-container { height: 350px; }
+        .chart-container { 
+            height: 350px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative; /* Needed for canvas to fill container */
+        }
+        .chart-container canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Filter controls in card headers */
+        .card-header .filter-controls {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+            margin-left: var(--spacing-md); /* Space from title */
+            flex-grow: 1; /* Allow to take available space */
+            justify-content: flex-end; /* Align to right */
+        }
+        .card-header .filter-controls input[type="date"] {
+            flex: 1; /* Make date inputs flexible */
+            min-width: 120px; /* Minimum width for date inputs */
+            max-width: 180px; /* Max width for date inputs */
+        }
+
 
         /* --- Transactions Page --- */
-        .filter-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .filter-bar select, .filter-bar input { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
-        .transaction-table { width: 100%; border-collapse: collapse; }
-        .transaction-table th, .transaction-table td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
-        .transaction-table th { background: var(--light-gray); }
-        .transaction-table .action-btns button { margin-right: 5px; }
+        .filter-bar {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+        .filter-bar .custom-select-wrapper,
+        .filter-bar input[type="date"] { /* Updated to date */
+            flex: 1; /* Allow filters to take equal space */
+            min-width: 150px; /* Ensure they don't get too small */
+        }
+
+        .transaction-table {
+            width: 100%;
+            border-collapse: separate; /* For rounded corners on rows */
+            border-spacing: 0 var(--spacing-sm); /* Space between rows */
+        }
+        .transaction-table th, .transaction-table td {
+            padding: var(--spacing-md);
+            text-align: left;
+        }
+        .transaction-table th {
+            background: var(--primary-color);
+            color: #fff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: var(--font-size-sm);
+            letter-spacing: 0.5px;
+            border-bottom: none; /* No bottom border for header cells */
+        }
+        .transaction-table th:first-child { border-top-left-radius: var(--border-radius-md); }
+        .transaction-table th:last-child { border-top-right-radius: var(--border-radius-md); }
+        
+        .transaction-table tr {
+            background-color: var(--background-card);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--box-shadow-sm);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .transaction-table tr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--shadow-medium);
+        }
+        .transaction-table td {
+            border-bottom: none; /* No individual cell borders for the new row design */
+            vertical-align: middle;
+        }
+        .transaction-table td:first-child { border-bottom-left-radius: var(--border-radius-md); border-top-left-radius: var(--border-radius-md); }
+        .transaction-table td:last-child { border-bottom-right-radius: var(--border-radius-md); border-top-right-radius: var(--border-radius-md); }
+
+        .transaction-table .action-btns button {
+            margin-right: var(--spacing-sm);
+        }
 
         /* --- Modal --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #fff; padding: 30px; border-radius: var(--border-radius); width: 90%; max-width: 500px; }
-        .modal-content h2 { margin-top: 0; }
-        .modal-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .modal-full-width { grid-column: 1 / -1; }
-        .modal-actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6); /* Darker overlay */
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeInOverlay 0.3s forwards;
+        }
+        @keyframes fadeInOverlay {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            background: var(--background-card);
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            width: 90%;
+            max-width: 550px;
+            box-shadow: var(--box-shadow-md);
+            animation: slideInFromTop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; /* Smooth slide in */
+        }
+        @keyframes slideInFromTop {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.8em;
+        }
+        .modal-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+        .modal-full-width {
+            grid-column: 1 / -1;
+        }
+        .modal-actions {
+            margin-top: var(--spacing-xl);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-md);
+        }
 
-        /* --- MEDIA QUERIES FOR RESPONSIVENESS --- */
+        /* --- MEDIA QUERIES FOR RESPONSIVENESS (Adjusted for new design) --- */
         @media (max-width: 768px) {
             body {
                 min-height: auto;
             }
             .app-container {
-                margin: 10px;
+                margin: var(--spacing-md);
             }
             .main-layout {
                 flex-direction: column; /* Stack nav and main vertically */
+                box-shadow: none; /* Remove main layout shadow */
             }
             nav {
                 width: 100%; /* Full width nav */
-                padding: 15px;
+                padding: var(--spacing-md);
                 border-right: none; /* Remove right border */
-                border-bottom: 1px solid #eee; /* Add bottom border */
-                box-shadow: none; /* Reduce visual weight */
-                border-radius: var(--border-radius) var(--border-radius) 0 0; /* Adjust radius for top */
+                border-bottom: 1px solid var(--border-color); /* Add bottom border */
+                box-shadow: var(--box-shadow-sm); /* Add subtle shadow to nav */
+                border-radius: var(--border-radius-md) var(--border-radius-md) 0 0; /* Adjust radius for top */
+                margin-bottom: var(--spacing-md);
+            }
+            nav h2 {
+                text-align: center;
+                margin-bottom: var(--spacing-md);
             }
             nav ul {
                 display: flex; /* Make nav items horizontal */
                 flex-wrap: wrap; /* Allow items to wrap */
                 justify-content: space-around; /* Distribute space */
-                margin: 10px 0;
+                margin: 0;
             }
             nav ul li {
-                padding: 10px;
-                margin-bottom: 5px;
+                padding: var(--spacing-sm) var(--spacing-xs);
+                margin-bottom: var(--spacing-sm);
                 flex: 1 1 auto; /* Allow items to grow/shrink */
                 text-align: center;
+                font-size: var(--font-size-sm);
             }
+            #logout-btn {
+                margin-top: var(--spacing-md);
+            }
+
             main {
-                padding: 15px; /* Reduce padding for main content */
+                padding: var(--spacing-md); /* Reduce padding for main content */
+                border-radius: 0 0 var(--border-radius-md) var(--border-radius-md); /* Adjust radius for bottom */
+                box-shadow: var(--box-shadow-sm); /* Add subtle shadow to main */
             }
 
             .summary-grid {
                 grid-template-columns: 1fr; /* Stack summary cards vertically */
+                gap: var(--spacing-md);
+            }
+            .summary-card {
+                padding: var(--spacing-md);
+            }
+            .summary-card p {
+                font-size: 2em; /* Smaller on mobile */
             }
 
             .filter-bar {
                 flex-direction: column; /* Stack filters vertically */
-                gap: 10px;
+                gap: var(--spacing-sm);
             }
-            .filter-bar select, .filter-bar input {
+            .filter-bar .custom-select-wrapper,
+            .filter-bar input[type="date"] { /* Updated to date */
                 width: 100%; /* Full width for filters */
             }
 
-            /* Responsive Table Styling */
+            .card-header .filter-controls {
+                margin-top: var(--spacing-sm);
+                margin-left: 0;
+                width: 100%;
+                justify-content: space-between;
+            }
+            .card-header .filter-controls input[type="date"] {
+                flex: 1;
+                max-width: unset; /* Remove max width on mobile */
+            }
+
+
+            /* Responsive Table Styling (Modified for new row design) */
             .transaction-table {
-                border: 1px solid #eee; /* Add a border around the table */
                 display: block; /* Make table behave like a block element */
                 width: 100%;
                 overflow-x: auto; /* Enable horizontal scrolling if content overflows */
                 white-space: nowrap; /* Prevent content from wrapping inside cells */
+                border-spacing: 0; /* Remove space between rows for mobile */
             }
             .transaction-table thead {
                 display: none; /* Hide original table header */
             }
-            .transaction-table tbody, 
-            .transaction-table tr, 
-            .transaction-table td {
-                display: block; /* Make tbody, tr, td behave like block elements */
-                width: auto; /* Reset width */
+            .transaction-table tbody {
+                display: block;
+                width: 100%;
             }
             .transaction-table tr {
-                margin-bottom: 15px;
-                border: 1px solid #ccc;
-                border-radius: var(--border-radius);
-                padding: 10px;
-                background-color: #fff;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                display: flex; /* Use flexbox for rows */
-                flex-wrap: wrap; /* Allow content to wrap within a row */
-                justify-content: space-between; /* Space out items */
-                align-items: center;
+                margin-bottom: var(--spacing-sm); /* Space out mobile rows */
+                padding: var(--spacing-md);
+                display: block; /* Each row is a block */
+                box-shadow: var(--box-shadow-sm);
+                border-radius: var(--border-radius-md);
             }
             .transaction-table td {
-                text-align: left; /* Align text to left */
-                padding: 8px 0; /* Adjust padding */
-                border-bottom: none; /* Remove individual cell borders */
-                position: relative;
-                padding-left: 100px; /* Space for the data-label */
-                flex-basis: 100%; /* Each cell takes full width initially */
-                display: flex; /* Flex on td for label + value */
-                align-items: baseline;
+                display: flex; /* Use flexbox for label-value pair */
+                justify-content: space-between; /* Push label and value to ends */
+                align-items: center;
+                padding: var(--spacing-xs) 0; /* Reduced vertical padding */
+                border-bottom: none; /* No individual cell borders */
+                text-align: right; /* Align value to right */
+                position: relative; /* For the data-label */
             }
             .transaction-table td::before {
                 content: attr(data-label); /* Use data-label for content */
-                position: absolute;
-                left: 0;
-                width: 90px; /* Fixed width for the label */
-                padding-right: 10px;
-                font-weight: bold;
-                text-align: right; /* Align label to the right */
-                color: #6c757d;
+                font-weight: 600;
+                color: var(--text-light);
+                text-align: left; /* Align label to left */
+                flex-shrink: 0; /* Prevent label from shrinking */
+                margin-right: var(--spacing-md); /* Space between label and value */
+                position: static; /* No absolute positioning needed with flex */
+                width: auto; /* Reset width */
+                padding-right: 0;
             }
             .transaction-table .action-btns {
-                flex-basis: 100%; /* Actions take full width */
-                text-align: left; /* Align buttons to left */
-                padding-left: 100px; /* Match padding with labels */
-                margin-top: 10px; /* Space from other details */
+                margin-top: var(--spacing-md); /* Space from other details */
+                display: flex;
+                justify-content: flex-end; /* Align buttons to the right */
+                width: 100%; /* Take full width */
+                padding-left: 0; /* Remove previous padding */
+            }
+            .transaction-table .action-btns button {
+                flex: 1; /* Make buttons grow to fill space */
+                max-width: 100px; /* Limit button width */
+                margin-right: var(--spacing-sm);
+            }
+            .transaction-table .action-btns button:last-child {
+                margin-right: 0;
+            }
+
+            /* Adjustments for dashboard recent transactions table */
+            #recent-transactions-list tr {
+                display: grid; /* Use grid for recent transactions for simpler layout */
+                grid-template-columns: 1fr 1fr; /* Two columns */
+                gap: var(--spacing-xs);
+                align-items: center;
+                margin-bottom: var(--spacing-sm);
+                padding: var(--spacing-sm);
+                border: 1px solid var(--border-color);
+                border-radius: var(--border-radius-md);
+                background-color: var(--background-card);
+                box-shadow: var(--box-shadow-sm);
+            }
+            #recent-transactions-list td {
+                padding: var(--spacing-xs);
+                border-bottom: none;
+                text-align: center; /* Center align items */
+            }
+            #recent-transactions-list td:first-child {
+                grid-column: 1 / 3; /* Date spans two columns */
+                font-weight: 600;
+                color: var(--text-light);
+                font-size: var(--font-size-sm);
+            }
+            #recent-transactions-list td.income,
+            #recent-transactions-list td.expense {
+                font-weight: bold;
+                font-size: 1.1em;
             }
 
             .modal-content {
-                padding: 20px; /* Reduce modal padding */
+                padding: var(--spacing-lg); /* Reduce modal padding */
                 width: 95%; /* Make modal wider on small screens */
             }
             .modal-form-grid {
@@ -188,37 +746,10 @@
             }
             .modal-actions {
                 flex-direction: column; /* Stack modal action buttons */
-                gap: 10px;
+                gap: var(--spacing-sm);
             }
             .modal-actions button {
                 width: 100%; /* Full width for modal buttons */
-            }
-
-            /* Adjustments for dashboard recent transactions table */
-            #recent-transactions-list tr {
-                display: grid; /* Use grid for recent transactions for simpler layout */
-                grid-template-columns: repeat(2, 1fr); /* Two columns */
-                gap: 5px;
-                align-items: center;
-                margin-bottom: 10px;
-                padding: 10px;
-                border: 1px solid #eee;
-                border-radius: var(--border-radius);
-                background-color: #fff;
-            }
-            #recent-transactions-list td {
-                padding: 5px;
-                border-bottom: none;
-                text-align: center; /* Center align items */
-            }
-            #recent-transactions-list td:first-child {
-                grid-column: 1 / 3; /* Date spans two columns */
-                font-weight: bold;
-            }
-            #recent-transactions-list td.income,
-            #recent-transactions-list td.expense {
-                font-weight: bold;
-                font-size: 1.1em;
             }
         }
     </style>
@@ -229,7 +760,7 @@
         <div id="auth-view" class="view">
             <div class="auth-container">
                 <div id="login-form">
-                    <h1>Login</h1>
+                    <h1>Login to FinDash</h1>
                     <form class="auth-form" id="login">
                         <div class="input-group"><label>Email</label><input type="email" id="login-email" required></div>
                         <div class="input-group"><label>Password</label><input type="password" id="login-password" required></div>
@@ -238,7 +769,7 @@
                     <p class="auth-toggle" id="show-signup">Don't have an account? Sign Up</p>
                 </div>
                 <div id="signup-form" style="display: none;">
-                    <h1>Sign Up</h1>
+                    <h1>Sign Up for FinDash</h1>
                     <form class="auth-form" id="signup">
                         <div class="input-group"><label>Email</label><input type="email" id="signup-email" required></div>
                         <div class="input-group"><label>Password</label><input type="password" id="signup-password" required></div>
@@ -262,14 +793,22 @@
                 </nav>
                 <main>
                     <div id="dashboard-view" class="view active">
-                        <div class="card-header"><h3>Dashboard</h3></div>
+                        <div class="card-header"><h3>Dashboard Overview</h3></div>
                         <div class="summary-grid">
                             <div class="summary-card"><h4 class="income">Total Income</h4><p id="dash-total-income" class="income">₹0</p></div>
                             <div class="summary-card"><h4 class="expense">Total Expenses</h4><p id="dash-total-expense" class="expense">₹0</p></div>
                             <div class="summary-card"><h4 class="balance">Balance</h4><p id="dash-balance" class="balance">₹0</p></div>
                         </div>
                         <div class="card">
-                            <div class="card-header"><h3>Recent Transactions</h3></div>
+                            <div class="card-header">
+                                <h3>Recent Transactions</h3>
+                                <div class="filter-controls">
+                                    <label for="dash-start-date" class="visually-hidden">Start Date:</label>
+                                    <input type="date" id="dash-start-date" class="date-filter" title="Start Date">
+                                    <label for="dash-end-date" class="visually-hidden">End Date:</label>
+                                    <input type="date" id="dash-end-date" class="date-filter" title="End Date">
+                                </div>
+                            </div>
                             <table class="transaction-table">
                                 <thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead>
                                 <tbody id="recent-transactions-list"></tbody>
@@ -283,9 +822,33 @@
                                 <button id="add-transaction-btn" class="btn btn-primary">Add New</button>
                             </div>
                             <div class="filter-bar">
-                                <input type="month" id="filter-month">
-                                <select id="filter-type"><option value="all">All Types</option><option value="income">Income</option><option value="expense">Expense</option></select>
-                                <select id="filter-category"><option value="all">All Categories</option></select>
+                                <label for="filter-start-date" class="visually-hidden">Start Date:</label>
+                                <input type="date" id="filter-start-date" title="Start Date">
+                                <label for="filter-end-date" class="visually-hidden">End Date:</label>
+                                <input type="date" id="filter-end-date" title="End Date">
+                                <div class="custom-select-wrapper">
+                                    <div class="custom-select-trigger" data-for="filter-type">All Types</div>
+                                    <div class="custom-options" id="custom-filter-type">
+                                        <div class="custom-option" data-value="all">All Types</div>
+                                        <div class="custom-option" data-value="income">Income</div>
+                                        <div class="custom-option" data-value="expense">Expense</div>
+                                    </div>
+                                    <select id="filter-type" class="hidden-select">
+                                        <option value="all">All Types</option>
+                                        <option value="income">Income</option>
+                                        <option value="expense">Expense</option>
+                                    </select>
+                                </div>
+
+                                <div class="custom-select-wrapper">
+                                    <div class="custom-select-trigger" data-for="filter-category">All Categories</div>
+                                    <div class="custom-options" id="custom-filter-category">
+                                        <div class="custom-option" data-value="all">All Categories</div>
+                                    </div>
+                                    <select id="filter-category" class="hidden-select">
+                                        <option value="all">All Categories</option>
+                                    </select>
+                                </div>
                             </div>
                             <table class="transaction-table">
                                 <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr></thead>
@@ -295,7 +858,15 @@
                     </div>
                     <div id="reports-view" class="view">
                         <div class="card">
-                            <div class="card-header"><h3>Expense Breakdown</h3></div>
+                            <div class="card-header">
+                                <h3>Expense Breakdown</h3>
+                                <div class="filter-controls">
+                                    <label for="reports-start-date" class="visually-hidden">Start Date:</label>
+                                    <input type="date" id="reports-start-date" class="date-filter" title="Start Date">
+                                    <label for="reports-end-date" class="visually-hidden">End Date:</label>
+                                    <input type="date" id="reports-end-date" class="date-filter" title="End Date">
+                                </div>
+                            </div>
                             <div class="chart-container"><canvas id="expense-chart"></canvas></div>
                         </div>
                     </div>
@@ -310,11 +881,40 @@
             <form id="modal-form">
                 <input type="hidden" id="transaction-id">
                 <div class="modal-form-grid">
-                    <div><label>Type</label><select id="transaction-type"><option value="expense">Expense</option><option value="income">Income</option></select></div>
-                    <div><label>Amount</label><input type="number" id="transaction-amount" required></div>
-                    <div class="modal-full-width"><label>Description</label><input type="text" id="transaction-description" required></div>
-                    <div><label>Category</label><select id="transaction-category"></select></div>
-                    <div><label>Date</label><input type="date" id="transaction-date" required></div>
+                    <div class="input-group">
+                        <label>Type</label>
+                        <div class="custom-select-wrapper">
+                            <div class="custom-select-trigger" data-for="transaction-type">Expense</div>
+                            <div class="custom-options" id="custom-transaction-type">
+                                <div class="custom-option" data-value="expense">Expense</div>
+                                <div class="custom-option" data-value="income">Income</div>
+                            </div>
+                            <select id="transaction-type" class="hidden-select">
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Amount</label>
+                        <input type="number" id="transaction-amount" step="0.01" required>
+                    </div>
+                    <div class="modal-full-width input-group">
+                        <label>Description</label>
+                        <input type="text" id="transaction-description" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Category</label>
+                        <div class="custom-select-wrapper">
+                            <div class="custom-select-trigger" data-for="transaction-category"></div>
+                            <div class="custom-options" id="custom-transaction-category"></div>
+                            <select id="transaction-category" class="hidden-select"></select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Date</label>
+                        <input type="date" id="transaction-date" required>
+                    </div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="modal-close-btn" class="btn">Cancel</button>
@@ -327,6 +927,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- SUPABASE CLIENT SETUP ---
+    // IMPORTANT: Replace with your actual Supabase URL and Anon Key
     const SUPABASE_URL = 'https://vgyzivuydkxswwbodcrj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZneXppdnV5ZGt4c3d3Ym9kY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NjgzODYsImV4cCI6MjA2NzU0NDM4Nn0.RplgPHxDjDHthfoLysIs731mxZKSxicpNWgCgYQu7NU';
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -335,10 +936,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let state = {
         user: null,
         transactions: [],
-        categories: { income: ['Salary', 'Gifts', 'Freelance', 'Refund'], expense: ['Food', 'Transport', 'Utilities', 'Entertainment', 'Rent', 'Shopping', 'Health', 'Education', 'Other'] }, // Added more categories
+        categories: { 
+            income: ['Salary', 'Gifts', 'Freelance', 'Refund', 'Investments', 'Other Income'], 
+            expense: ['Food', 'Transport', 'Utilities', 'Entertainment', 'Rent', 'Shopping', 'Health', 'Education', 'Other Expenses', 'Bills', 'Travel'] 
+        },
         expenseChart: null,
+        // Global date filters, applied to all views
         filters: {
-            month: '',
+            startDate: '', // Will be set to start of current month initially
+            endDate: '',   // Will be set to end of current month initially
             type: 'all',
             category: 'all'
         }
@@ -359,22 +965,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const addTransactionBtn = document.getElementById('add-transaction-btn');
     const modalCloseBtn = document.getElementById('modal-close-btn');
 
-    // Filter elements
-    const filterMonth = document.getElementById('filter-month');
-    const filterType = document.getElementById('filter-type');
-    const filterCategory = document.getElementById('filter-category');
+    // Filter elements - Date filters for each view
+    const dashStartDateInput = document.getElementById('dash-start-date');
+    const dashEndDateInput = document.getElementById('dash-end-date');
+    const transactionsStartDateInput = document.getElementById('filter-start-date');
+    const transactionsEndDateInput = document.getElementById('filter-end-date');
+    const reportsStartDateInput = document.getElementById('reports-start-date');
+    const reportsEndDateInput = document.getElementById('reports-end-date');
+
+    // Filter elements - Type and Category (only on transactions view)
+    const filterTypeSelect = document.getElementById('filter-type'); // Hidden select
+    const filterCategorySelect = document.getElementById('filter-category'); // Hidden select
+
+    // Custom Dropdown Triggers (Note: These are within specific parent elements to ensure correct selection)
+    const customFilterTypeTrigger = document.querySelector('.filter-bar .custom-select-trigger[data-for="filter-type"]');
+    const customFilterCategoryTrigger = document.querySelector('.filter-bar .custom-select-trigger[data-for="filter-category"]');
+    const customTransactionTypeTrigger = document.querySelector('#modal-form .custom-select-wrapper .custom-select-trigger[data-for="transaction-type"]');
+    const customTransactionCategoryTrigger = document.querySelector('#modal-form .custom-select-wrapper .custom-select-trigger[data-for="transaction-category"]');
+
+    // Chart text color (as CSS variables can't be used directly in Chart.js options)
+    const chartTextColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
 
 
     // --- UTILITY FUNCTIONS ---
     const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-    const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB'); // DD/MM/YYYY
-    const formatDateForInput = (dateStr) => {
-        const d = new Date(dateStr);
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        // Ensure date is treated as UTC to avoid timezone issues when converting to YYYY-MM-DD
+        const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+        return utcDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }); // DD/MM/YYYY
+    };
+    const formatDateForInput = (dateObj) => {
+        const d = new Date(dateObj);
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
+
+    // Helper to get start and end of current month
+    function getStartAndEndOfCurrentMonth() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth(); // 0-indexed
+
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0); // Last day of current month
+
+        return {
+            startDate: formatDateForInput(startDate),
+            endDate: formatDateForInput(endDate)
+        };
+    }
 
     // --- VIEW NAVIGATION ---
     const navigateTo = (viewId) => {
@@ -389,16 +1031,30 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#nav-menu li').forEach(li => {
             li.classList.toggle('active', li.dataset.view === viewId);
         });
+
+        // When navigating to a view, update its specific date filters based on global state
+        // and then re-render that specific view
+        if (viewId === 'dashboard-view') {
+            dashStartDateInput.value = state.filters.startDate;
+            dashEndDateInput.value = state.filters.endDate;
+            renderDashboard();
+        }
+        if (viewId === 'transactions-view') {
+            transactionsStartDateInput.value = state.filters.startDate;
+            transactionsEndDateInput.value = state.filters.endDate;
+            renderTransactionsPage();
+        }
+        if (viewId === 'reports-view') {
+            reportsStartDateInput.value = state.filters.startDate;
+            reportsEndDateInput.value = state.filters.endDate;
+            renderReportsPage();
+        }
     };
 
     navMenu.addEventListener('click', (e) => {
         if (e.target.tagName === 'LI') {
             const viewId = e.target.dataset.view;
             navigateTo(viewId);
-            // Re-render the specific view to ensure fresh data/charts
-            if (viewId === 'dashboard-view') renderDashboard();
-            if (viewId === 'transactions-view') renderTransactionsPage();
-            if (viewId === 'reports-view') renderReportsPage();
         }
     });
 
@@ -406,8 +1062,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const auth = {
         showLogin: document.getElementById('show-login'),
         showSignup: document.getElementById('show-signup'),
-        loginForm: document.getElementById('login-form'),
-        signupForm: document.getElementById('signup-form'),
+        loginFormDiv: document.getElementById('login-form'), // Renamed to avoid conflict with form ID
+        signupFormDiv: document.getElementById('signup-form'), // Renamed to avoid conflict with form ID
 
         init() {
             this.showLogin.addEventListener('click', () => this.toggleForms(true));
@@ -416,10 +1072,26 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('signup').addEventListener('submit', this.handleSignup.bind(this));
             logoutBtn.addEventListener('click', this.handleLogout.bind(this));
             this.checkSession();
+
+            // Listen for Supabase auth state changes
+            db.auth.onAuthStateChange((event, session) => {
+                state.user = session ? session.user : null;
+                if (state.user) {
+                    // Set default date filters to current month upon successful login
+                    const { startDate, endDate } = getStartAndEndOfCurrentMonth();
+                    state.filters.startDate = startDate;
+                    state.filters.endDate = endDate;
+
+                    navigateTo('dashboard-view');
+                    initializeApp();
+                } else {
+                    navigateTo('login');
+                }
+            });
         },
         toggleForms(showLogin) {
-            this.loginForm.style.display = showLogin ? 'block' : 'none';
-            this.signupForm.style.display = showLogin ? 'none' : 'block';
+            this.loginFormDiv.style.display = showLogin ? 'block' : 'none';
+            this.signupFormDiv.style.display = showLogin ? 'none' : 'block';
         },
         async handleLogin(e) {
             e.preventDefault();
@@ -427,25 +1099,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('login-password').value;
             const { error } = await db.auth.signInWithPassword({ email, password });
             if (error) alert(error.message);
-            else this.checkSession();
+            // State change listener handles navigation
         },
         async handleSignup(e) {
             e.preventDefault();
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
-            const { error } = await db.auth.signUp({ email, password });
+            const { data, error } = await db.auth.signUp({ email, password });
             if (error) alert(error.message);
-            else alert('Check your email for a confirmation link!');
+            else {
+                alert('Success! Check your email for a confirmation link to activate your account.');
+                this.toggleForms(true); // Switch back to login after signup
+            }
         },
         async handleLogout() {
-            await db.auth.signOut();
-            state.user = null;
-            navigateTo('login');
+            const { error } = await db.auth.signOut();
+            if (error) alert(error.message);
+            // State change listener handles navigation
         },
         async checkSession() {
             const { data: { session } } = await db.auth.getSession();
             state.user = session ? session.user : null;
             if (state.user) {
+                // Set default date filters to current month upon initial app load
+                const { startDate, endDate } = getStartAndEndOfCurrentMonth();
+                state.filters.startDate = startDate;
+                state.filters.endDate = endDate;
+
                 navigateTo('dashboard-view');
                 initializeApp();
             } else {
@@ -458,17 +1138,34 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initializeApp() {
         if (!state.user) return; // Ensure user is logged in before fetching data
 
+        // Clear previous transactions
+        state.transactions = [];
+
         const [incomes, expenses] = await Promise.all([
             db.from('incomes').select('*').eq('user_id', state.user.id).order('income_date', { ascending: false }),
             db.from('expenses').select('*').eq('user_id', state.user.id).order('expense_date', { ascending: false })
         ]);
         
         state.transactions = [
-            ...(incomes.data || []).map(i => ({...i, type: 'income', date: i.income_date, description: i.description, category: i.category || 'Uncategorized'})),
-            ...(expenses.data || []).map(e => ({...e, type: 'expense', date: e.expense_date, description: e.description, category: e.category || 'Uncategorized'}))
+            ...(incomes.data || []).map(i => ({...i, type: 'income', date: i.income_date, description: i.description, category: i.category || 'Uncategorized', id: i.id})),
+            ...(expenses.data || []).map(e => ({...e, type: 'expense', date: e.expense_date, description: e.description, category: e.category || 'Uncategorized', id: e.id}))
         ].sort((a,b) => new Date(b.date) - new Date(a.date));
 
-        populateFilterCategories(); // Populate categories based on fetched data
+        // Populate filter categories AFTER transactions are loaded
+        populateFilterCategories(); 
+        
+        // Ensure custom select UI is updated for initial state
+        updateCustomSelectUI(filterTypeSelect, customFilterTypeTrigger);
+        updateCustomSelectUI(filterCategorySelect, customFilterCategoryTrigger);
+
+        // Set default filter values to inputs based on state
+        dashStartDateInput.value = state.filters.startDate;
+        dashEndDateInput.value = state.filters.endDate;
+        transactionsStartDateInput.value = state.filters.startDate;
+        transactionsEndDateInput.value = state.filters.endDate;
+        reportsStartDateInput.value = state.filters.startDate;
+        reportsEndDateInput.value = state.filters.endDate;
+
         renderAll();
     }
 
@@ -479,20 +1176,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderDashboard() {
-        const totalIncome = state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const totalExpense = state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        // Filter transactions for dashboard based on global startDate and endDate
+        const filteredTransactions = state.transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            const start = state.filters.startDate ? new Date(state.filters.startDate) : null;
+            const end = state.filters.endDate ? new Date(state.filters.endDate) : null;
+            
+            if (start && transactionDate < start) return false;
+            // Add one day to end date to make filter inclusive of the end day
+            if (end && transactionDate >= new Date(end.getTime() + 24 * 60 * 60 * 1000)) return false; 
+            return true;
+        });
+
+        const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
         document.getElementById('dash-total-income').textContent = formatCurrency(totalIncome);
         document.getElementById('dash-total-expense').textContent = formatCurrency(totalExpense);
         document.getElementById('dash-balance').textContent = formatCurrency(totalIncome - totalExpense);
 
         const recentList = document.getElementById('recent-transactions-list');
         recentList.innerHTML = '';
-        state.transactions.slice(0, 5).forEach(t => {
+        // Show only 5 recent transactions AFTER filtering by date
+        filteredTransactions.slice(0, 5).forEach(t => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td data-label="Date">${formatDate(t.date)}</td>
                 <td data-label="Description">${t.description}</td>
-                <td data-label="Amount" class="${t.type}">${formatCurrency(t.amount)}</td>
+                <td data-label="Amount" class="${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</td>
             `;
             recentList.appendChild(row);
         });
@@ -504,22 +1214,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const filteredTransactions = state.transactions.filter(t => {
             const transactionDate = new Date(t.date);
-            const filterMonthValue = filterMonth.value;
-            const filterTypeValue = filterType.value;
-            const filterCategoryValue = filterCategory.value;
-
-            // Month filter
-            if (filterMonthValue && `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}` !== filterMonthValue) {
-                return false;
-            }
+            const start = state.filters.startDate ? new Date(state.filters.startDate) : null;
+            const end = state.filters.endDate ? new Date(state.filters.endDate) : null;
+            
+            // Date filter
+            if (start && transactionDate < start) return false;
+            if (end && transactionDate >= new Date(end.getTime() + 24 * 60 * 60 * 1000)) return false; // Inclusive end date
 
             // Type filter
-            if (filterTypeValue !== 'all' && t.type !== filterTypeValue) {
+            if (state.filters.type !== 'all' && t.type !== state.filters.type) {
                 return false;
             }
 
             // Category filter
-            if (filterCategoryValue !== 'all' && t.category !== filterCategoryValue) {
+            if (state.filters.category !== 'all' && t.category !== state.filters.category) {
                 return false;
             }
             return true;
@@ -530,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = `
                 <td data-label="Date">${formatDate(t.date)}</td>
                 <td data-label="Description">${t.description}</td>
-                <td data-label="Category">${t.category}</td>
+                <td data-label="Category">${t.category || 'N/A'}</td>
                 <td data-label="Amount" class="${t.type}">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</td>
                 <td class="action-btns" data-label="Actions">
                     <button class="btn btn-primary btn-sm" onclick="window.openModal(true, '${t.id}', '${t.type}')">Edit</button>
@@ -544,7 +1252,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderReportsPage() {
         if(state.expenseChart) state.expenseChart.destroy();
         
-        const expenseData = state.transactions.filter(t => t.type === 'expense')
+        // Filter transactions for reports based on global startDate and endDate
+        const filteredTransactions = state.transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            const start = state.filters.startDate ? new Date(state.filters.startDate) : null;
+            const end = state.filters.endDate ? new Date(state.filters.endDate) : null;
+            
+            if (start && transactionDate < start) return false;
+            if (end && transactionDate >= new Date(end.getTime() + 24 * 60 * 60 * 1000)) return false; // Inclusive end date
+            return true;
+        });
+
+        const expenseData = filteredTransactions.filter(t => t.type === 'expense')
             .reduce((acc, t) => {
                 acc[t.category] = (acc[t.category] || 0) + t.amount;
                 return acc;
@@ -557,7 +1276,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: Object.keys(expenseData),
                 datasets: [{
                     data: Object.values(expenseData),
-                    backgroundColor: ['#dc3545', '#ffc107', '#007bff', '#17a2b8', '#6f42c1', '#28a745', '#fd7e14', '#20c997', '#6610f2'] // More colors for more categories
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+                        '#FF9F40', '#E7E9ED', '#6A8EAD', '#A1CC38', '#F15B2A',
+                        '#7B7D7D', '#5E35B1'
+                    ] // More distinct colors for categories
                 }]
             },
             options: {
@@ -567,16 +1290,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     legend: {
                         position: 'right',
                         labels: {
-                            boxWidth: 20, // Make color boxes smaller for mobile
-                            padding: 10 // Reduce padding between legend items
+                            boxWidth: 20,
+                            padding: 10,
+                            font: {
+                                size: 12
+                            },
+                            color: chartTextColor
                         }
                     },
                     title: {
                         display: true,
                         text: 'Expense Breakdown by Category',
                         font: {
-                            size: 16 // Adjust title font size for mobile
-                        }
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        color: chartTextColor
                     }
                 }
             }
@@ -589,51 +1318,103 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('transaction-id').value = id;
         document.getElementById('modal-title').textContent = isEdit ? 'Edit Transaction' : 'Add Transaction';
         
-        // Set default date for new transaction to today
-        if (!isEdit) {
-            document.getElementById('transaction-date').value = formatDateForInput(new Date());
-        }
+        const transactionTypeElement = document.getElementById('transaction-type');
+        const transactionAmountElement = document.getElementById('transaction-amount');
+        const transactionDescriptionElement = document.getElementById('transaction-description');
+        const transactionCategoryElement = document.getElementById('transaction-category');
+        const transactionDateElement = document.getElementById('transaction-date');
 
         if(isEdit) {
             const transaction = state.transactions.find(t => t.id == id && t.type === type);
             if(transaction) {
-                document.getElementById('transaction-type').value = transaction.type;
-                document.getElementById('transaction-amount').value = transaction.amount;
-                document.getElementById('transaction-description').value = transaction.description;
-                document.getElementById('transaction-category').value = transaction.category;
-                document.getElementById('transaction-date').value = formatDateForInput(transaction.date); // Use new format for input
+                transactionTypeElement.value = transaction.type;
+                transactionAmountElement.value = transaction.amount;
+                transactionDescriptionElement.value = transaction.description;
+                transactionDateElement.value = formatDateForInput(new Date(transaction.date)); 
+                
+                // FIX: Update category options BEFORE setting category value
+                updateCategoryOptions(transaction.type); 
+                transactionCategoryElement.value = transaction.category; 
             }
+        } else {
+            // For new transaction, default to expense and populate its categories
+            transactionTypeElement.value = 'expense';
+            updateCategoryOptions('expense');
+            transactionCategoryElement.value = state.categories.expense[0] || ''; // Set default category, handle empty
+            transactionDateElement.value = formatDateForInput(new Date()); // Default to today
         }
         
-        updateCategoryOptions(document.getElementById('transaction-type').value);
+        // FIX: Ensure custom dropdowns are updated after setting hidden select values
+        updateCustomSelectUI(transactionTypeElement, customTransactionTypeTrigger);
+        updateCustomSelectUI(transactionCategoryElement, customTransactionCategoryTrigger);
+
         modal.style.display = 'flex';
     };
 
     addTransactionBtn.addEventListener('click', () => openModal());
     modalCloseBtn.addEventListener('click', () => modal.style.display = 'none');
-    document.getElementById('transaction-type').addEventListener('change', (e) => updateCategoryOptions(e.target.value));
+    
+    // Event listener for hidden transaction type select
+    document.getElementById('transaction-type').addEventListener('change', (e) => {
+        updateCategoryOptions(e.target.value);
+        // Ensure custom category dropdown reflects the new category set (e.g., first item of new type)
+        const transactionCategoryElement = document.getElementById('transaction-category');
+        updateCustomSelectUI(transactionCategoryElement, customTransactionCategoryTrigger);
+    });
 
     function updateCategoryOptions(type) {
         const categorySelect = document.getElementById('transaction-category');
+        const customCategoryOptionsDiv = document.getElementById('custom-transaction-category');
+        
         categorySelect.innerHTML = '';
-        state.categories[type].forEach(cat => {
-            const option = document.createElement('option');
-            option.value = cat;
-            option.textContent = cat;
-            categorySelect.appendChild(option);
-        });
+        customCategoryOptionsDiv.innerHTML = ''; // Clear custom options too
+
+        const categoriesForType = state.categories[type];
+        if (categoriesForType && categoriesForType.length > 0) {
+            categoriesForType.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+
+                const customOption = document.createElement('div');
+                customOption.classList.add('custom-option');
+                customOption.dataset.value = cat;
+                customOption.textContent = cat;
+                customCategoryOptionsDiv.appendChild(customOption);
+            });
+        } else {
+            // Add a default "No Category" option if no categories exist for the type
+            const defaultCat = 'Uncategorized';
+            categorySelect.innerHTML = `<option value="${defaultCat}">${defaultCat}</option>`;
+            customCategoryOptionsDiv.innerHTML = `<div class="custom-option" data-value="${defaultCat}">${defaultCat}</div>`;
+        }
     }
 
     function populateFilterCategories() {
+        // Get all unique categories across all transactions
         const allCategories = new Set();
-        state.transactions.forEach(t => allCategories.add(t.category));
+        state.transactions.forEach(t => {
+            if (t.category) {
+                allCategories.add(t.category);
+            }
+        });
 
-        filterCategory.innerHTML = '<option value="all">All Categories</option>';
+        filterCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+        const customFilterCategoryDiv = document.getElementById('custom-filter-category');
+        customFilterCategoryDiv.innerHTML = '<div class="custom-option" data-value="all">All Categories</div>'; // Add default for custom
+
         Array.from(allCategories).sort().forEach(cat => {
             const option = document.createElement('option');
             option.value = cat;
             option.textContent = cat;
-            filterCategory.appendChild(option);
+            filterCategorySelect.appendChild(option);
+
+            const customOption = document.createElement('div');
+            customOption.classList.add('custom-option');
+            customOption.dataset.value = cat;
+            customOption.textContent = cat;
+            customFilterCategoryDiv.appendChild(customOption);
         });
     }
 
@@ -653,6 +1434,25 @@ document.addEventListener('DOMContentLoaded', () => {
         transactionData[dateKey] = document.getElementById('transaction-date').value;
 
         const tableName = type === 'income' ? 'incomes' : 'expenses';
+        
+        // Basic validation
+        if (isNaN(transactionData.amount) || transactionData.amount <= 0) {
+            alert('Please enter a valid amount.');
+            return;
+        }
+        if (!transactionData.description.trim()) {
+            alert('Please enter a description.');
+            return;
+        }
+        if (!transactionData.category.trim()) {
+            alert('Please select a category.');
+            return;
+        }
+        if (!transactionData[dateKey]) {
+            alert('Please select a date.');
+            return;
+        }
+
 
         if(id) { // Update
             const { error } = await db.from(tableName).update(transactionData).match({ id });
@@ -675,13 +1475,139 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Filter Event Listeners ---
-    filterMonth.addEventListener('change', renderTransactionsPage);
-    filterType.addEventListener('change', () => {
-        // Update category filter options when type changes
-        populateFilterCategories(); 
+    // Dashboard Filters
+    dashStartDateInput.addEventListener('change', (e) => { state.filters.startDate = e.target.value; renderDashboard(); });
+    dashEndDateInput.addEventListener('change', (e) => { state.filters.endDate = e.target.value; renderDashboard(); });
+
+    // Transactions Filters
+    transactionsStartDateInput.addEventListener('change', (e) => { state.filters.startDate = e.target.value; renderTransactionsPage(); });
+    transactionsEndDateInput.addEventListener('change', (e) => { state.filters.endDate = e.target.value; renderTransactionsPage(); });
+    filterTypeSelect.addEventListener('change', () => {
+        state.filters.type = filterTypeSelect.value;
+        populateFilterCategories(); // Re-populate based on new type selection
+        // After populating, reset category filter to 'all' and update its UI
+        state.filters.category = 'all';
+        updateCustomSelectUI(filterCategorySelect, customFilterCategoryTrigger);
         renderTransactionsPage();
     });
-    filterCategory.addEventListener('change', renderTransactionsPage);
+    filterCategorySelect.addEventListener('change', () => {
+        state.filters.category = filterCategorySelect.value;
+        renderTransactionsPage();
+    });
+
+    // Reports Filters
+    reportsStartDateInput.addEventListener('change', (e) => { state.filters.startDate = e.target.value; renderReportsPage(); });
+    reportsEndDateInput.addEventListener('change', (e) => { state.filters.endDate = e.target.value; renderReportsPage(); });
+
+
+    // --- Custom Dropdown Logic ---
+
+    // Function to update the custom select UI to reflect the hidden select's value
+    function updateCustomSelectUI(hiddenSelect, customTrigger) {
+        // Ensure hiddenSelect and customTrigger exist
+        if (!hiddenSelect || !customTrigger) return;
+
+        const selectedOption = hiddenSelect.options[hiddenSelect.selectedIndex];
+        const selectedOptionText = selectedOption ? selectedOption.text : '';
+        const selectedOptionValue = selectedOption ? selectedOption.value : '';
+
+        customTrigger.textContent = selectedOptionText;
+        
+        // Remove 'selected' class from all custom options within its parent
+        const customOptionsDiv = customTrigger.nextElementSibling;
+        if (customOptionsDiv) {
+            customOptionsDiv.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+
+            // Add 'selected' class to the matching custom option
+            const selectedCustomOption = customOptionsDiv.querySelector(`.custom-option[data-value="${selectedOptionValue}"]`);
+            if (selectedCustomOption) {
+                selectedCustomOption.classList.add('selected');
+                // Scroll to the selected option to make it visible if list is long
+                selectedCustomOption.scrollIntoView({ block: 'nearest' });
+            }
+        }
+    }
+
+    // Function to handle opening/closing custom dropdowns
+    function toggleCustomDropdown(triggerElement) {
+        const customOptionsDiv = triggerElement.nextElementSibling;
+        if (!customOptionsDiv) return; // Guard against missing options div
+        
+        const isOpen = customOptionsDiv.classList.contains('open');
+
+        // Close all other open dropdowns first
+        document.querySelectorAll('.custom-options.open').forEach(openDiv => {
+            if (openDiv !== customOptionsDiv) {
+                openDiv.classList.remove('open');
+            }
+        });
+
+        // Toggle the clicked dropdown
+        customOptionsDiv.classList.toggle('open', !isOpen);
+    }
+
+    // Function to handle option selection in custom dropdowns
+    function selectCustomOption(optionElement) {
+        const selectedValue = optionElement.dataset.value;
+        const wrapper = optionElement.closest('.custom-select-wrapper');
+        const hiddenSelect = wrapper ? wrapper.querySelector('.hidden-select') : null;
+        
+        if (!hiddenSelect) return;
+
+        hiddenSelect.value = selectedValue;
+        
+        // Dispatch change event on the hidden select to trigger associated listeners
+        const event = new Event('change');
+        hiddenSelect.dispatchEvent(event);
+
+        // Update the custom UI for the selected value
+        updateCustomSelectUI(hiddenSelect, wrapper.querySelector('.custom-select-trigger'));
+        
+        // Close the dropdown
+        optionElement.closest('.custom-options').classList.remove('open');
+    }
+
+    // Event listeners for custom dropdowns (delegated for efficiency)
+    document.querySelectorAll('.custom-select-trigger').forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent document click from immediately closing
+            toggleCustomDropdown(trigger);
+        });
+    });
+
+    // Delegated click listener for all custom options
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('custom-option')) {
+            e.stopPropagation(); // Prevent document click from immediately closing
+            selectCustomOption(e.target);
+        }
+    });
+
+    // Close dropdowns when clicking outside (re-checking to ensure it only closes if not on an open dropdown or its trigger)
+    document.addEventListener('click', (e) => {
+        document.querySelectorAll('.custom-options.open').forEach(openDiv => {
+            const trigger = openDiv.previousElementSibling;
+            if (trigger && !trigger.contains(e.target) && !openDiv.contains(e.target)) {
+                openDiv.classList.remove('open');
+            }
+        });
+    });
+
+    // Add a visually-hidden class for accessibility of labels for date inputs
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+    `;
+    document.head.appendChild(style);
 
 
     // --- INITIALIZE APP ---
