@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly & Daily Expense Tracker</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --primary-dark: #0056b3;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #343a40;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background-color: #ffffff;
+            box-shadow: var(--box-shadow);
+            margin: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        header h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        /* --- View Toggler --- */
+        .view-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            border: 1px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 1em;
+            font-weight: bold;
+            text-align: center;
+            background-color: #fff;
+            color: var(--primary-color);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .toggle-btn.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        /* --- Sections --- */
+        .income-section, .expense-form, .tracker-view {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+        }
+        
+        .tracker-view { display: none; }
+        .tracker-view.active { display: block; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        /* Make form responsive on larger screens */
+        @media (min-width: 600px) {
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .form-grid .full-width { grid-column: 1 / -1; }
+        }
+
+        label { margin-bottom: 5px; font-weight: bold; display: block; }
+        input[type="text"], input[type="number"], input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: var(--border-radius);
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        button#add-expense-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button#add-expense-btn:hover { background-color: #218838; }
+
+        /* --- Summary Cards --- */
+        .summary-cards {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .card {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+        .card h3 { margin: 0 0 5px 0; font-size: 1em; text-transform: uppercase; }
+        .card p { margin: 0; font-size: 1.6em; font-weight: bold; }
+        .card-income { background-color: #e9f5ea; color: var(--success-color); }
+        .card-expenses { background-color: #fceaea; color: var(--danger-color); }
+        .card-balance { background-color: #e7f3ff; color: var(--primary-color); }
+
+        /* --- Tracker Controls & History --- */
+        .tracker-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        .tracker-controls h2 { margin: 0; font-size: 1.2em; color: var(--primary-dark); }
+        .nav-btn {
+            background: none;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #daily-date-picker { max-width: 180px; padding: 8px; }
+
+        .expense-history ul {
+            list-style: none;
+            padding: 0;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .expense-history li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        .expense-history li:nth-child(odd) { background-color: var(--light-gray); }
+        .item-details { display: flex; flex-direction: column; }
+        .item-desc { font-weight: 500; }
+        .item-date { font-size: 0.8em; color: #6c757d; }
+        .item-amount { font-weight: bold; font-size: 1.1em; color: var(--danger-color); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Advanced Expense Tracker</h1>
+        </header>
+
+        <section class="income-section">
+            <div class="form-grid">
+                <div>
+                    <label for="base-income">Base Monthly Income (₹)</label>
+                    <input type="number" id="base-income" value="25000">
+                </div>
+                <div>
+                    <label for="add-income">Additional Income This Period (₹)</label>
+                    <input type="number" id="add-income" placeholder="e.g., 5000">
+                </div>
+            </div>
+        </section>
+
+        <section class="expense-form">
+            <div class="form-grid">
+                <div>
+                    <label for="expense-desc">New Expense Description</label>
+                    <input type="text" id="expense-desc" placeholder="e.g., Groceries">
+                </div>
+                <div>
+                    <label for="expense-amount">Amount (₹)</label>
+                    <input type="number"id="expense-amount" placeholder="e.g., 1500">
+                </div>
+                <div>
+                    <label for="expense-date">Date of Expense</label>
+                    <input type="date" id="expense-date">
+                </div>
+                <div class="full-width">
+                     <button id="add-expense-btn">Add Expense</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="view-toggle">
+            <button class="toggle-btn active" id="toggle-monthly">Monthly Overview</button>
+            <button class="toggle-btn" id="toggle-daily">Daily Tracker</button>
+        </div>
+
+        <div id="monthly-view" class="tracker-view active">
+            <div class="tracker-controls">
+                <button class="nav-btn" id="prev-month-btn">&lt; Prev</button>
+                <h2 id="monthly-period-title"></h2>
+                <button class="nav-btn" id="next-month-btn">Next &gt;</button>
+            </div>
+            <div class="summary-cards">
+                <div class="card card-income">
+                    <h3>Total Income</h3>
+                    <p id="monthly-income-val">₹0</p>
+                </div>
+                <div class="card card-expenses">
+                    <h3>Total Expenses</h3>
+                    <p id="monthly-expenses-val">₹0</p>
+                </div>
+                <div class="card card-balance">
+                    <h3>Balance</h3>
+                    <p id="monthly-balance-val">₹0</p>
+                </div>
+            </div>
+            <div class="expense-history">
+                <ul id="monthly-expense-list"></ul>
+            </div>
+        </div>
+
+        <div id="daily-view" class="tracker-view">
+            <div class="tracker-controls">
+                <h2>Expenses for Day</h2>
+                <input type="date" id="daily-date-picker">
+            </div>
+             <div class="summary-cards">
+                 <div class="card card-expenses" style="width: 100%;">
+                    <h3>Daily Total</h3>
+                    <p id="daily-total-val">₹0</p>
+                </div>
+             </div>
+            <div class="expense-history">
+                <ul id="daily-expense-list"></ul>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM ELEMENTS ---
+    const baseIncomeInput = document.getElementById('base-income');
+    const addIncomeInput = document.getElementById('add-income');
+    const expenseDescInput = document.getElementById('expense-desc');
+    const expenseAmountInput = document.getElementById('expense-amount');
+    const expenseDateInput = document.getElementById('expense-date');
+    const addExpenseBtn = document.getElementById('add-expense-btn');
+
+    const toggleMonthlyBtn = document.getElementById('toggle-monthly');
+    const toggleDailyBtn = document.getElementById('toggle-daily');
+    const monthlyView = document.getElementById('monthly-view');
+    const dailyView = document.getElementById('daily-view');
+
+    // Monthly View Elements
+    const monthlyPeriodTitle = document.getElementById('monthly-period-title');
+    const prevMonthBtn = document.getElementById('prev-month-btn');
+    const nextMonthBtn = document.getElementById('next-month-btn');
+    const monthlyIncomeVal = document.getElementById('monthly-income-val');
+    const monthlyExpensesVal = document.getElementById('monthly-expenses-val');
+    const monthlyBalanceVal = document.getElementById('monthly-balance-val');
+    const monthlyExpenseList = document.getElementById('monthly-expense-list');
+
+    // Daily View Elements
+    const dailyDatePicker = document.getElementById('daily-date-picker');
+    const dailyTotalVal = document.getElementById('daily-total-val');
+    const dailyExpenseList = document.getElementById('daily-expense-list');
+
+    // --- STATE MANAGEMENT ---
+    let state = {
+        baseIncome: 25000,
+        additionalIncome: 0,
+        expenses: [], // { id, desc, amount, date }
+        currentView: 'monthly',
+        // A date object that determines which tracking month we are viewing
+        displayMonthDate: new Date() 
+    };
+    
+    // --- UTILITY FUNCTIONS ---
+    const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+    const formatDate = (dateObj) => {
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    const formatDateForDisplay = (dateObj) => dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    // The core logic for the custom month
+    const getTrackingPeriod = (date) => {
+        let d = new Date(date);
+        let year = d.getFullYear();
+        let month = d.getMonth(); // 0-11
+
+        let start, end;
+        if (d.getDate() >= 10) {
+            start = new Date(year, month, 10);
+            end = new Date(year, month + 1, 9, 23, 59, 59, 999);
+        } else {
+            start = new Date(year, month - 1, 10);
+            end = new Date(year, month, 9, 23, 59, 59, 999);
+        }
+        return { start, end };
+    };
+
+    // --- DATA PERSISTENCE (LOCAL STORAGE) ---
+    const saveData = () => {
+        localStorage.setItem('expenseTrackerState', JSON.stringify(state));
+    };
+
+    const loadData = () => {
+        const savedState = localStorage.getItem('expenseTrackerState');
+        if (savedState) {
+            const parsedState = JSON.parse(savedState);
+            // Convert date strings back to Date objects
+            parsedState.displayMonthDate = new Date(parsedState.displayMonthDate);
+            parsedState.expenses.forEach(e => e.date = new Date(e.date));
+            state = parsedState;
+        }
+    };
+
+    // --- RENDER FUNCTIONS ---
+    const renderUI = () => {
+        // Set input values from state
+        baseIncomeInput.value = state.baseIncome;
+        addIncomeInput.value = state.additionalIncome || '';
+
+        // Toggle view visibility
+        monthlyView.classList.toggle('active', state.currentView === 'monthly');
+        dailyView.classList.toggle('active', state.currentView === 'daily');
+        toggleMonthlyBtn.classList.toggle('active', state.currentView === 'monthly');
+        toggleDailyBtn.classList.toggle('active', state.currentView === 'daily');
+
+        if (state.currentView === 'monthly') {
+            renderMonthlyView();
+        } else {
+            renderDailyView();
+        }
+        saveData();
+    };
+
+    const renderMonthlyView = () => {
+        const period = getTrackingPeriod(state.displayMonthDate);
+        monthlyPeriodTitle.textContent = `${formatDateForDisplay(period.start)} - ${formatDateForDisplay(period.end)}`;
+        
+        const expensesInPeriod = state.expenses.filter(e => e.date >= period.start && e.date <= period.end);
+        
+        const totalExpenses = expensesInPeriod.reduce((sum, e) => sum + e.amount, 0);
+        const totalIncome = state.baseIncome + state.additionalIncome;
+        const balance = totalIncome - totalExpenses;
+
+        monthlyIncomeVal.textContent = formatCurrency(totalIncome);
+        monthlyExpensesVal.textContent = formatCurrency(totalExpenses);
+        monthlyBalanceVal.textContent = formatCurrency(balance);
+        monthlyBalanceVal.style.color = balance < 0 ? 'var(--danger-color)' : 'var(--primary-color)';
+
+        monthlyExpenseList.innerHTML = '';
+        if (expensesInPeriod.length === 0) {
+            monthlyExpenseList.innerHTML = '<li>No expenses in this period.</li>';
+            return;
+        }
+        expensesInPeriod.sort((a,b) => b.date - a.date).forEach(e => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div class="item-details">
+                    <span class="item-desc">${e.desc}</span>
+                    <span class="item-date">${formatDateForDisplay(e.date)}</span>
+                </div>
+                <span class="item-amount">-${formatCurrency(e.amount)}</span>`;
+            monthlyExpenseList.appendChild(li);
+        });
+    };
+
+    const renderDailyView = () => {
+        const selectedDateStr = dailyDatePicker.value;
+        const dailyExpenses = state.expenses.filter(e => formatDate(e.date) === selectedDateStr);
+        
+        const dailyTotal = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
+        dailyTotalVal.textContent = formatCurrency(dailyTotal);
+
+        dailyExpenseList.innerHTML = '';
+        if (dailyExpenses.length === 0) {
+            dailyExpenseList.innerHTML = '<li>No expenses for this day.</li>';
+            return;
+        }
+        dailyExpenses.forEach(e => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span class="item-desc">${e.desc}</span>
+                <span class="item-amount">-${formatCurrency(e.amount)}</span>`;
+            dailyExpenseList.appendChild(li);
+        });
+    };
+    
+    // --- EVENT HANDLERS ---
+    baseIncomeInput.addEventListener('change', (e) => {
+        state.baseIncome = parseFloat(e.target.value) || 0;
+        renderUI();
+    });
+
+    addIncomeInput.addEventListener('change', (e) => {
+        state.additionalIncome = parseFloat(e.target.value) || 0;
+        renderUI();
+    });
+
+    addExpenseBtn.addEventListener('click', () => {
+        const desc = expenseDescInput.value.trim();
+        const amount = parseFloat(expenseAmountInput.value);
+        const dateStr = expenseDateInput.value;
+
+        if (!desc || !amount || !dateStr || amount <= 0) {
+            alert('Please fill all fields with valid data.');
+            return;
+        }
+
+        state.expenses.push({
+            id: Date.now(),
+            desc,
+            amount,
+            date: new Date(dateStr + 'T00:00:00') // Avoid timezone issues
+        });
+        
+        expenseDescInput.value = '';
+        expenseAmountInput.value = '';
+        renderUI();
+    });
+
+    toggleMonthlyBtn.addEventListener('click', () => {
+        state.currentView = 'monthly';
+        renderUI();
+    });
+
+    toggleDailyBtn.addEventListener('click', () => {
+        state.currentView = 'daily';
+        renderUI();
+    });
+    
+    // Monthly navigation
+    prevMonthBtn.addEventListener('click', () => {
+        state.displayMonthDate.setMonth(state.displayMonthDate.getMonth() - 1);
+        renderUI();
+    });
+    nextMonthBtn.addEventListener('click', () => {
+        state.displayMonthDate.setMonth(state.displayMonthDate.getMonth() + 1);
+        renderUI();
+    });
+
+    // Daily date picker
+    dailyDatePicker.addEventListener('change', renderDailyView);
+    
+    // --- INITIALIZATION ---
+    loadData();
+    // Set default dates for date inputs
+    expenseDateInput.value = formatDate(new Date());
+    dailyDatePicker.value = formatDate(new Date());
+    // Initial render
+    renderUI();
+});
+</script>
+</body>
+</html>
