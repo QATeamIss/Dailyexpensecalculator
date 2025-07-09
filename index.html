@@ -7,22 +7,22 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* --- Updated Design Tokens for Modern Look --- */
+        /* --- Design Tokens --- */
         :root {
-            /* Modern Color Palette */
-            --primary-color: #3B82F6; /* Vibrant blue */
+            /* Colors */
+            --primary-color: #3B82F6;
             --primary-dark: #2563EB;
-            --success-color: #10B981; /* Emerald green */
-            --danger-color: #EF4444; /* Vivid red */
-            --warning-color: #F59E0B; /* Amber */
-            --info-color: #6B7280; /* Cool gray */
-            --background-light: #F3F4F6; /* Light gray background */
+            --success-color: #10B981;
+            --danger-color: #EF4444;
+            --warning-color: #F59E0B;
+            --info-color: #6B7280;
+            --background-light: #F3F4F6;
             --background-card: #FFFFFF;
-            --border-color: #D1D5DB; /* Softer border */
+            --border-color: #D1D5DB;
             --shadow-light: rgba(0, 0, 0, 0.05);
             --shadow-medium: rgba(0, 0, 0, 0.1);
-            --text-color: #1F2937; /* Dark gray for text */
-            --text-light: #6B7280; /* Lighter gray for secondary text */
+            --text-color: #1F2937;
+            --text-light: #6B7280;
 
             /* Spacing */
             --spacing-xs: 4px;
@@ -50,11 +50,12 @@
         body {
             font-family: var(--font-family-sans);
             margin: 0;
-            background: linear-gradient(135deg, var(--background-light), #E5E7EB); /* Subtle gradient */
+            background: linear-gradient(135deg, var(--background-light), #E5E7EB);
             color: var(--text-color);
             min-height: 100vh;
             line-height: 1.6;
             font-size: var(--font-size-base);
+            overflow-x: hidden; /* Prevent horizontal scroll */
         }
 
         .app-container {
@@ -62,6 +63,7 @@
             max-width: 1280px;
             margin: var(--spacing-lg) auto;
             padding: 0 var(--spacing-md);
+            box-sizing: border-box;
         }
 
         .view {
@@ -88,6 +90,7 @@
             box-shadow: var(--box-shadow-md);
             text-align: center;
             border: 1px solid var(--border-color);
+            box-sizing: border-box;
         }
 
         .auth-container h1 {
@@ -165,6 +168,8 @@
             border-radius: var(--border-radius-lg);
             box-shadow: var(--box-shadow-md);
             overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         nav {
@@ -174,6 +179,7 @@
             padding: var(--spacing-xl);
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
         }
 
         nav h2 {
@@ -185,6 +191,7 @@
         nav ul {
             list-style: none;
             padding: 0;
+            margin: 0;
             flex-grow: 1;
         }
 
@@ -195,6 +202,8 @@
             cursor: pointer;
             transition: all var(--transition-speed);
             font-weight: 500;
+            display: flex;
+            align-items: center;
         }
 
         nav ul li:hover {
@@ -211,6 +220,8 @@
             flex: 1;
             padding: var(--spacing-xl);
             background: var(--background-light);
+            box-sizing: border-box;
+            min-width: 0; /* Prevent overflow */
         }
 
         /* --- Reusable Components --- */
@@ -221,6 +232,8 @@
             box-shadow: var(--box-shadow-sm);
             margin-bottom: var(--spacing-lg);
             transition: all var(--transition-speed);
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .card:hover {
@@ -235,12 +248,15 @@
             margin-bottom: var(--spacing-md);
             padding-bottom: var(--spacing-sm);
             border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
         }
 
         .card-header h3 {
             margin: 0;
             font-size: var(--font-size-lg);
             font-weight: 600;
+            flex: 1;
         }
 
         .btn {
@@ -251,6 +267,7 @@
             font-weight: 600;
             font-size: var(--font-size-sm);
             transition: all var(--transition-speed);
+            touch-action: manipulation; /* Improve touch responsiveness */
         }
 
         .btn-primary {
@@ -292,6 +309,7 @@
         .custom-select-wrapper {
             position: relative;
             width: 100%;
+            min-width: 120px;
         }
 
         .custom-select-trigger {
@@ -302,6 +320,10 @@
             cursor: pointer;
             font-size: var(--font-size-base);
             transition: all var(--transition-speed);
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .custom-select-trigger:focus {
@@ -343,6 +365,7 @@
             padding: var(--spacing-sm) var(--spacing-md);
             cursor: pointer;
             transition: all var(--transition-speed);
+            font-size: var(--font-size-base);
         }
 
         .custom-option:hover {
@@ -370,6 +393,7 @@
             border-radius: var(--border-radius-md);
             font-size: var(--font-size-base);
             transition: all var(--transition-speed);
+            box-sizing: border-box;
         }
 
         input[type="text"]:focus,
@@ -423,6 +447,12 @@
         .chart-container {
             height: 300px;
             position: relative;
+            width: 100%;
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+            height: 100%;
         }
 
         .filter-controls {
@@ -430,6 +460,13 @@
             gap: var(--spacing-sm);
             flex-wrap: wrap;
             justify-content: flex-end;
+            align-items: center;
+            width: 100%;
+        }
+
+        .filter-controls input[type="date"] {
+            max-width: 160px;
+            flex: 1;
         }
 
         /* --- Transactions --- */
@@ -438,24 +475,29 @@
             gap: var(--spacing-md);
             margin-bottom: var(--spacing-lg);
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .filter-bar input,
         .filter-bar .custom-select-wrapper {
             flex: 1;
             min-width: 140px;
+            max-width: 200px;
         }
 
         .transaction-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0 var(--spacing-sm);
+            table-layout: fixed; /* Ensure consistent column widths */
         }
 
         .transaction-table th,
         .transaction-table td {
             padding: var(--spacing-md);
             text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .transaction-table th {
@@ -463,13 +505,16 @@
             color: #fff;
             font-weight: 600;
             font-size: var(--font-size-sm);
-            border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
         }
+
+        .transaction-table th:first-child { border-top-left-radius: var(--border-radius-md); }
+        .transaction-table th:last-child { border-top-right-radius: var(--border-radius-md); }
 
         .transaction-table tr {
             background: var(--background-card);
             border-radius: var(--border-radius-md);
             box-shadow: var(--box-shadow-sm);
+            transition: all var(--transition-speed);
         }
 
         .transaction-table tr:hover {
@@ -481,8 +526,10 @@
             vertical-align: middle;
         }
 
-        .transaction-table .action-btns button {
-            margin-right: var(--spacing-sm);
+        .transaction-table .action-btns {
+            display: flex;
+            gap: var(--spacing-sm);
+            justify-content: flex-end;
         }
 
         /* --- Modal --- */
@@ -497,12 +544,9 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            animation: fadeInOverlay 0.3s ease;
-        }
-
-        @keyframes fadeInOverlay {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            overflow: auto;
+            padding: var(--spacing-md);
+            box-sizing: border-box;
         }
 
         .modal-content {
@@ -510,9 +554,10 @@
             padding: var(--spacing-xl);
             border-radius: var(--border-radius-lg);
             max-width: 500px;
-            width: 90%;
+            width: 100%;
             box-shadow: var(--box-shadow-md);
             animation: slideIn 0.4s ease-out;
+            box-sizing: border-box;
         }
 
         @keyframes slideIn {
@@ -542,6 +587,7 @@
             display: flex;
             gap: var(--spacing-md);
             justify-content: flex-end;
+            flex-wrap: wrap;
         }
 
         /* --- Mobile Responsiveness --- */
@@ -566,6 +612,7 @@
                 display: flex;
                 justify-content: space-around;
                 flex-wrap: wrap;
+                gap: var(--spacing-sm);
             }
 
             nav ul li {
@@ -573,6 +620,7 @@
                 text-align: center;
                 padding: var(--spacing-sm);
                 font-size: var(--font-size-sm);
+                min-width: 80px;
             }
 
             main {
@@ -582,6 +630,11 @@
 
             .summary-grid {
                 grid-template-columns: 1fr;
+                gap: var(--spacing-sm);
+            }
+
+            .summary-card {
+                padding: var(--spacing-md);
             }
 
             .summary-card p {
@@ -591,23 +644,31 @@
             .filter-bar {
                 flex-direction: column;
                 gap: var(--spacing-sm);
+                align-items: stretch;
             }
 
             .filter-bar input,
             .filter-bar .custom-select-wrapper {
+                max-width: none;
+                min-width: 0;
                 width: 100%;
-                min-width: unset;
             }
 
             .card-header .filter-controls {
+                justify-content: flex-start;
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .filter-controls input[type="date"] {
+                max-width: none;
                 width: 100%;
-                justify-content: space-between;
-                margin-top: var(--spacing-sm);
             }
 
             .transaction-table {
                 display: block;
                 overflow-x: auto;
+                width: 100%;
             }
 
             .transaction-table thead {
@@ -623,12 +684,15 @@
                 margin-bottom: var(--spacing-md);
                 padding: var(--spacing-md);
                 box-shadow: var(--box-shadow-sm);
+                border-radius: var(--border-radius-md);
             }
 
             .transaction-table td {
                 display: flex;
                 justify-content: space-between;
+                align-items: center;
                 padding: var(--spacing-sm) 0;
+                border-bottom: none;
             }
 
             .transaction-table td::before {
@@ -636,29 +700,49 @@
                 font-weight: 600;
                 color: var(--text-light);
                 margin-right: var(--spacing-md);
+                flex: 1;
+                text-align: left;
+            }
+
+            .transaction-table td:not(.action-btns) {
+                flex: 1;
+                text-align: right;
             }
 
             .transaction-table .action-btns {
                 margin-top: var(--spacing-md);
-                display: flex;
                 justify-content: flex-end;
+                flex-wrap: wrap;
+            }
+
+            .transaction-table .action-btns button {
+                flex: 1;
+                max-width: 100px;
+                min-width: 80px;
             }
 
             .modal-content {
                 padding: var(--spacing-md);
                 width: 95%;
+                max-width: none;
             }
 
             .modal-form-grid {
                 grid-template-columns: 1fr;
+                gap: var(--spacing-sm);
             }
 
             .modal-actions {
                 flex-direction: column;
+                gap: var(--spacing-sm);
             }
 
             .modal-actions button {
                 width: 100%;
+            }
+
+            .chart-container {
+                height: 250px;
             }
         }
 
@@ -667,18 +751,29 @@
                 --font-size-base: 14px;
                 --font-size-sm: 0.75rem;
                 --font-size-lg: 1rem;
+                --spacing-md: 12px;
+                --spacing-lg: 16px;
             }
 
             .auth-container {
                 padding: var(--spacing-md);
+                margin: var(--spacing-md) auto;
             }
 
             .summary-card p {
                 font-size: 1.25rem;
             }
 
-            .chart-container {
-                height: 250px;
+            .card-header h3 {
+                font-size: var(--font-size-lg);
+            }
+
+            .btn {
+                font-size: var(--font-size-sm);
+            }
+
+            .transaction-table td {
+                font-size: var(--font-size-sm);
             }
         }
     </style>
@@ -688,7 +783,7 @@
         <div id="auth-view" class="view">
             <div class="auth-container">
                 <div id="login-form">
-                    <h1>Login to RATrack</h1>
+                    <h1>Login to FinDash</h1>
                     <form class="auth-form" id="login">
                         <div class="input-group">
                             <label for="login-email">Email</label>
@@ -703,7 +798,7 @@
                     <p class="auth-toggle" id="show-signup">Don't have an account? Sign Up</p>
                 </div>
                 <div id="signup-form" style="display: none;">
-                    <h1>Sign Up for RaTrack</h1>
+                    <h1>Sign Up for FinDash</h1>
                     <form class="auth-form" id="signup">
                         <div class="input-group">
                             <label for="signup-email">Email</label>
@@ -723,7 +818,7 @@
         <div id="app-view" class="view">
             <div class="main-layout">
                 <nav>
-                    <h2>RaTrack</h2>
+                    <h2>FinDash</h2>
                     <ul id="nav-menu">
                         <li data-view="dashboard-view" class="active">Dashboard</li>
                         <li data-view="transactions-view">Transactions</li>
@@ -802,7 +897,13 @@
                             </div>
                             <table class="transaction-table">
                                 <thead>
-                                    <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th style="width: 15%;">Date</th>
+                                        <th style="width: 30%;">Description</th>
+                                        <th style="width: 20%;">Category</th>
+                                        <th style="width: 20%;">Amount</th>
+                                        <th style="width: 15%;">Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="transactions-list"></tbody>
                             </table>
@@ -1196,7 +1297,7 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'right',
+                                position: 'bottom', /* Moved to bottom for better mobile layout */
                                 labels: {
                                     boxWidth: 15,
                                     padding: 15,
